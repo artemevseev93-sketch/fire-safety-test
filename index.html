@@ -62,6 +62,8 @@
   .btn-success { background: linear-gradient(135deg, #2e7d32, #1b5e20); }
   .btn-success:hover { box-shadow: 0 8px 20px rgba(46,125,50,.35); }
   .btn-danger { background: linear-gradient(135deg, #c62828, #8e0000); }
+  .btn-info { background: linear-gradient(135deg, #0277bd, #01579b); }
+  .btn-info:hover { box-shadow: 0 8px 20px rgba(2,119,189,.35); }
 
   .mode-select { display: flex; gap: 15px; margin: 20px 0; flex-wrap: wrap; }
   .mode-card {
@@ -185,6 +187,7 @@
   }
   .storage-status.error { background: #ffebee; color: #c62828; }
   .storage-status.warn { background: #fff3e0; color: #ef6c00; }
+  .storage-status.info { background: #e3f2fd; color: #0277bd; }
 
   @media print {
     body { background: #fff; padding: 0; }
@@ -350,6 +353,7 @@
       </div>
 
       <div class="export-buttons">
+        <button class="btn btn-info" onclick="loadJournalFromServer()">🔄 Обновить с сервера</button>
         <button class="btn btn-success" onclick="exportToExcel()">📥 Скачать Excel (XLSX)</button>
         <button class="btn btn-success" onclick="exportToCSV()">📄 Скачать CSV</button>
         <button class="btn btn-secondary" onclick="exportJournalJSON()">💾 Экспорт журнала (.json)</button>
@@ -445,6 +449,11 @@
 </div>
 
 <script>
+/* ====================== НАСТРОЙКИ JSONBIN.IO ====================== */
+const JSONBIN_BIN_ID = '6acf56feac6210605a305824';
+const JSONBIN_MASTER_KEY = 'ВСТАВЬТЕ_СЮДА_ВАШ_X_MASTER_KEY'; // <-- замените на ваш ключ
+const JSONBIN_API = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+
 /* ====================== IndexedDB ====================== */
 const IDB_NAME = 'pb_fire_safety';
 const IDB_VERSION = 1;
@@ -561,7 +570,6 @@ function generateLogin(fio) {
     : (parts[0] || 'user').replace(/[^a-zа-яё0-9]/g, '');
   if (!base) base = 'user';
 
-  // Транслитерация (упрощённая)
   const translitMap = {
     'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z','и':'i','й':'y',
     'к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f',
@@ -601,7 +609,6 @@ function registerWorker() {
   }
 
   const users = getUsers();
-  // Проверяем, нет ли уже такого работника (по ФИО)
   const existing = users.find(u => u.role === 'user' && u.fio.toLowerCase() === fio.toLowerCase());
   if (existing) {
     currentUser = existing;
@@ -609,13 +616,8 @@ function registerWorker() {
     const login = generateLogin(fio);
     const pass = generatePassword();
     const newUser = {
-      login,
-      pass,
-      fio,
-      role: 'user',
-      position,
-      dept: dept || '—',
-      instructor: instructor || ''
+      login, pass, fio, role: 'user',
+      position, dept: dept || '—', instructor: instructor || ''
     };
     users.push(newUser);
     saveUsers(users);
@@ -624,7 +626,6 @@ function registerWorker() {
 
   localStorage.setItem('pb_currentUser', JSON.stringify(currentUser));
 
-  // Заполняем стартовый экран
   document.getElementById('fio').value = currentUser.fio || fio;
   document.getElementById('position').value = currentUser.position || position;
   document.getElementById('dept').value = currentUser.dept || dept;
@@ -649,7 +650,7 @@ function login() {
 
   if (!u) { alert('❌ Неверный логин или пароль'); return; }
   if (u.role !== 'admin') {
-    alert('⛔ Этот вход только для администратора. Работники регистрируются на главном экране.');
+    alert('⛔ Этот вход только для администратора.');
     return;
   }
   currentUser = u;
@@ -674,7 +675,6 @@ function logout() {
   document.getElementById('userBadge').style.display = 'none';
   showScreen('loginScreen');
   document.getElementById('loginPass').value = '';
-  // Очищаем поля регистрации
   ['regFio','regPosition','regDept','regInstructor'].forEach(id => document.getElementById(id).value = '');
 }
 
@@ -959,7 +959,6 @@ document.getElementById('startBtn').addEventListener('click', () => {
   const position = document.getElementById('position').value.trim();
   if (!fio || !position) { alert('Пожалуйста, заполните ФИО и должность'); return; }
 
-  // Обновляем данные пользователя, если он работник
   if (currentUser && currentUser.role === 'user') {
     const users = getUsers();
     const idx = users.findIndex(u => u.login === currentUser.login);
@@ -1059,14 +1058,61 @@ function getJournal() {
 }
 function saveJournal(items) { localStorage.setItem('pb_journal', JSON.stringify(items)); }
 
+/* ====================== ОТПРАВКА НА JSONBIN.IO ====================== */
+async function sendToServer(data) {
+  if (!JSONBIN_MASTER_KEY || JSONBIN_MASTER_KEY.startsWith('ВСТАВЬТЕ')) {
+    console.warn('⚠️ JSONBin Master Key не задан — данные не отправлены на сервер');
+    return { ok: false, reason: 'no-key' };
+  }
+  try {
+    // 1. Читаем текущее содержимое бина
+    const readResp = await fetch(`${JSONBIN_API}/latest`, {
+      method: 'GET',
+      headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+    });
+    if (!readResp.ok) throw new Error('HTTP ' + readResp.status);
+    const readJson = await readResp.json();
+
+    // Структура бина: { journal: [...] }
+    let serverJournal = readJson?.record?.journal;
+    if (!Array.isArray(serverJournal)) serverJournal = [];
+
+    // 2. Добавляем новую запись
+    serverJournal.push(data);
+
+    // 3. Записываем обратно
+    const writeResp = await fetch(JSONBIN_API, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': JSONBIN_MASTER_KEY
+      },
+      body: JSON.stringify({ journal: serverJournal })
+    });
+    if (!writeResp.ok) throw new Error('HTTP ' + writeResp.status);
+
+    console.log('✅ Отправлено на JSONBin.io. Всего записей:', serverJournal.length);
+    return { ok: true, count: serverJournal.length };
+  } catch(e) {
+    console.warn('⚠️ Ошибка отправки на сервер:', e);
+    return { ok: false, reason: e.message };
+  }
+}
+
 async function saveResult(data) {
+  // локально
   const journal = getJournal();
   journal.push(data);
   saveJournal(journal);
 
   if (isIDBAvailable()) {
-    try { await idbAdd(data); }
-    catch(e) { console.warn('IndexedDB:', e); }
+    try { await idbAdd(data); } catch(e) { console.warn('IndexedDB:', e); }
+  }
+
+  // на сервер
+  const res = await sendToServer(data);
+  if (!res.ok && res.reason !== 'no-key') {
+    console.warn('Результат сохранён только локально.');
   }
 }
 
@@ -1088,6 +1134,52 @@ async function syncJournalFromIDB() {
     }
   } catch(e) {
     console.warn('Ошибка синхронизации:', e);
+  }
+}
+
+/* ====================== ЗАГРУЗКА С СЕРВЕРА (для админа) ====================== */
+async function loadJournalFromServer() {
+  if (!JSONBIN_MASTER_KEY || JSONBIN_MASTER_KEY.startsWith('ВСТАВЬТЕ')) {
+    alert('❌ Не задан X-Master-Key для JSONBin.io. Вставьте его в коде.');
+    return;
+  }
+  const statusEl = document.getElementById('storageStatus');
+  const infoEl = document.getElementById('storageInfo');
+  statusEl.className = 'storage-status info';
+  statusEl.style.display = 'block';
+  infoEl.textContent = 'Загрузка с сервера...';
+
+  try {
+    const resp = await fetch(`${JSONBIN_API}/latest`, {
+      method: 'GET',
+      headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const json = await resp.json();
+
+    let serverJournal = json?.record?.journal;
+    if (!Array.isArray(serverJournal)) serverJournal = [];
+
+    // Объединяем с локальным (без дублей)
+    const localItems = getJournal();
+    const keys = new Set(localItems.map(makeRecordKey));
+    let added = 0;
+    serverJournal.forEach(it => {
+      const k = makeRecordKey(it);
+      if (!keys.has(k)) { keys.add(k); localItems.push(it); added++; }
+    });
+
+    saveJournal(localItems);
+    renderJournal();
+    renderStats();
+
+    statusEl.className = 'storage-status';
+    infoEl.textContent = `Загружено с сервера: ${serverJournal.length}, новых добавлено: ${added}`;
+    alert(`✅ Синхронизация завершена.\nВсего на сервере: ${serverJournal.length}\nНовых для этого устройства: ${added}`);
+  } catch(e) {
+    statusEl.className = 'storage-status error';
+    infoEl.textContent = 'Ошибка загрузки: ' + e.message;
+    alert('❌ Ошибка загрузки с сервера: ' + e.message);
   }
 }
 
@@ -1215,7 +1307,7 @@ async function updateStorageStatus() {
     const items = await idbGetAll();
     el.className = 'storage-status';
     el.style.display = 'block';
-    info.textContent = `IndexedDB активен. Записей в надёжном хранилище: ${items.length}`;
+    info.textContent = `IndexedDB активен. Записей локально: ${items.length}. Нажмите «Обновить с сервера» для синхронизации.`;
   } catch(e) {
     el.className = 'storage-status warn';
     el.style.display = 'block';
@@ -1287,7 +1379,7 @@ function escapeHtml(s) {
 }
 
 async function clearJournal() {
-  if (!confirm('Удалить все записи журнала? Действие необратимо.')) return;
+  if (!confirm('Удалить все записи журнала локально? На сервере записи останутся.')) return;
   localStorage.removeItem('pb_journal');
   if (isIDBAvailable()) {
     try { await idbClear(); } catch(e) { console.warn(e); }
@@ -1295,7 +1387,7 @@ async function clearJournal() {
   renderJournal();
   renderStats();
   updateStorageStatus();
-  alert('✅ Журнал очищен');
+  alert('✅ Локальный журнал очищен');
 }
 
 /* ====================== ПОЛЬЗОВАТЕЛИ (админ) ====================== */
@@ -1505,7 +1597,6 @@ async function importJournalJSON(event) {
     } catch(e) { /* ignore */ }
     localStorage.removeItem('pb_currentUser');
   }
-  // По умолчанию — экран регистрации работника
   showScreen('loginScreen');
 })();
 </script>
