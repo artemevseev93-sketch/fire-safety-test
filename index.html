@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Проверка знаний по пожарной безопасности</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@5/dist/email.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -64,6 +65,8 @@
   .btn-danger { background: linear-gradient(135deg, #c62828, #8e0000); }
   .btn-info { background: linear-gradient(135deg, #0277bd, #01579b); }
   .btn-info:hover { box-shadow: 0 8px 20px rgba(2,119,189,.35); }
+  .btn-mail { background: linear-gradient(135deg, #6a1b9a, #4a148c); }
+  .btn-mail:hover { box-shadow: 0 8px 20px rgba(106,27,154,.35); }
 
   .mode-select { display: flex; gap: 15px; margin: 20px 0; flex-wrap: wrap; }
   .mode-card {
@@ -354,6 +357,7 @@
 
       <div class="export-buttons">
         <button class="btn btn-info" onclick="loadJournalFromServer()">🔄 Обновить с сервера</button>
+        <button class="btn btn-mail" onclick="sendEmailReport(true)">📧 Отправить отчёт на почту</button>
         <button class="btn btn-success" onclick="exportToExcel()">📥 Скачать Excel (XLSX)</button>
         <button class="btn btn-success" onclick="exportToCSV()">📄 Скачать CSV</button>
         <button class="btn btn-secondary" onclick="exportJournalJSON()">💾 Экспорт журнала (.json)</button>
@@ -454,6 +458,27 @@ const JSONBIN_BIN_ID = '6acf56feac6210605a305824';
 const JSONBIN_MASTER_KEY = '$2a$10$.l7.jFmxksStbOsG4kr.RecZ7xYlnU8qXJD53KHyvX6w.eMgqjYra';
 const JSONBIN_API = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
+/* ====================== НАСТРОЙКИ EMAILJS ====================== */
+const EMAILJS_PUBLIC_KEY  = '6Fx8TSQW_lu31cjFW';
+const EMAILJS_SERVICE_ID  = 'service_g7qugvs';
+const EMAILJS_TEMPLATE_ID = 'template_x7ynp45';
+const ADMIN_EMAIL         = 'artem.evseev93@gmail.com';
+
+const LAST_SYNC_KEY  = 'pb_last_sync';
+const LAST_EMAIL_KEY = 'pb_last_email';
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+let emailjsReady = false;
+try {
+  if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && !EMAILJS_PUBLIC_KEY.startsWith('ВСТАВЬТЕ')) {
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    emailjsReady = true;
+    console.log('✅ EmailJS инициализирован');
+  } else {
+    console.warn('⚠️ EmailJS не настроен — рассылка отключена');
+  }
+} catch(e) { console.warn('EmailJS init error:', e); }
+
 /* ====================== IndexedDB ====================== */
 const IDB_NAME = 'pb_fire_safety';
 const IDB_VERSION = 1;
@@ -488,8 +513,7 @@ async function idbAdd(item) {
   const db = await openIDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(IDB_STORE, 'readwrite');
-    const store = tx.objectStore(IDB_STORE);
-    const req = store.add({ ...item, uniqueKey: makeRecordKey(item) });
+    const req = tx.objectStore(IDB_STORE).add({ ...item, uniqueKey: makeRecordKey(item) });
     req.onsuccess = () => resolve(req.result);
     req.onerror = (e) => {
       if (e.target.error.name === 'ConstraintError') resolve(null);
@@ -651,6 +675,7 @@ function showMainScreen() {
   if (currentUser.role === 'admin') {
     renderAdmin();
     showScreen('adminScreen');
+    setTimeout(autoSyncAndMail, 500);
   } else {
     document.getElementById('fio').value = currentUser.fio || '';
     document.getElementById('position').value = currentUser.position || '';
@@ -1086,12 +1111,15 @@ async function syncJournalFromIDB() {
 }
 
 /* ====================== ЗАГРУЗКА С СЕРВЕРА ====================== */
-async function loadJournalFromServer() {
+async function loadJournalFromServer(silent) {
   const statusEl = document.getElementById('storageStatus');
   const infoEl = document.getElementById('storageInfo');
-  statusEl.className = 'storage-status info';
-  statusEl.style.display = 'block';
-  infoEl.textContent = 'Загрузка с сервера...';
+
+  if (!silent && statusEl && infoEl) {
+    statusEl.className = 'storage-status info';
+    statusEl.style.display = 'block';
+    infoEl.textContent = 'Загрузка с сервера...';
+  }
 
   try {
     const resp = await fetch(`${JSONBIN_API}/latest`, {
@@ -1116,13 +1144,98 @@ async function loadJournalFromServer() {
     renderJournal();
     renderStats();
 
-    statusEl.className = 'storage-status';
-    infoEl.textContent = `Загружено с сервера: ${serverJournal.length}, новых добавлено: ${added}`;
-    alert(`✅ Синхронизация завершена.\nВсего на сервере: ${serverJournal.length}\nНовых для этого устройства: ${added}`);
+    if (statusEl && infoEl) {
+      statusEl.className = 'storage-status';
+      infoEl.textContent = `Загружено с сервера: ${serverJournal.length}, новых добавлено: ${added}`;
+    }
+    if (!silent) {
+      alert(`✅ Синхронизация завершена.\nВсего на сервере: ${serverJournal.length}\nНовых для этого устройства: ${added}`);
+    }
+    return { ok: true, total: serverJournal.length, added };
   } catch(e) {
-    statusEl.className = 'storage-status error';
-    infoEl.textContent = 'Ошибка загрузки: ' + e.message;
-    alert('❌ Ошибка загрузки с сервера: ' + e.message);
+    if (statusEl && infoEl) {
+      statusEl.className = 'storage-status error';
+      infoEl.textContent = 'Ошибка загрузки: ' + e.message;
+    }
+    if (!silent) alert('❌ Ошибка загрузки с сервера: ' + e.message);
+    return { ok: false, error: e.message };
+  }
+}
+
+/* ====================== ОТПРАВКА ОТЧЁТА НА ПОЧТУ ====================== */
+async function sendEmailReport(manual) {
+  if (!emailjsReady) {
+    if (manual) alert('⚠️ EmailJS не настроен.\nВпишите ключи в начале скрипта.');
+    console.warn('EmailJS не настроен — письмо не отправлено');
+    return false;
+  }
+
+  const journal = getJournal();
+  if (journal.length === 0) {
+    if (manual) alert('Журнал пуст — нечего отправлять');
+    return false;
+  }
+
+  const total = journal.length;
+  const passed = journal.filter(x => x.passed).length;
+  const failed = total - passed;
+  const percent = Math.round(passed / total * 100);
+  const now = new Date();
+
+  const detailsArr = journal.slice(-100).map(it =>
+    `${it.dateStr} | ${it.fio} | ${it.position} | ${it.modeName} | ${it.passed ? 'Зачёт' : 'Незачёт'} (${it.percent}%)`
+  );
+  const details = detailsArr.join('\n');
+
+  const params = {
+    to_email: ADMIN_EMAIL,
+    date: now.toLocaleString('ru-RU'),
+    total: total,
+    passed: passed,
+    failed: failed,
+    percent: percent,
+    details: details
+  };
+
+  try {
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
+    localStorage.setItem(LAST_EMAIL_KEY, Date.now().toString());
+    console.log('✅ Письмо отправлено на', ADMIN_EMAIL);
+    if (manual) alert('✅ Отчёт отправлен на ' + ADMIN_EMAIL);
+    return true;
+  } catch(e) {
+    console.error('❌ Ошибка отправки письма:', e);
+    if (manual) alert('❌ Не удалось отправить письмо: ' + (e.text || e.message || JSON.stringify(e)));
+    return false;
+  }
+}
+
+/* ====================== АВТО-СИНХРОНИЗАЦИЯ И РАССЫЛКА ====================== */
+async function autoSyncAndMail() {
+  if (!currentUser || currentUser.role !== 'admin') return;
+
+  const now = Date.now();
+  const lastSync  = parseInt(localStorage.getItem(LAST_SYNC_KEY)  || '0');
+  const lastEmail = parseInt(localStorage.getItem(LAST_EMAIL_KEY) || '0');
+
+  if (now - lastSync > DAY_MS) {
+    console.log('🔄 Авто-синхронизация: прошло более 24 часов');
+    const res = await loadJournalFromServer(true);
+    if (res.ok) {
+      localStorage.setItem(LAST_SYNC_KEY, now.toString());
+      console.log('✅ Авто-синхронизация завершена');
+    }
+  } else {
+    const hoursLeft = Math.round((DAY_MS - (now - lastSync)) / 3600000);
+    console.log(`⏳ Следующая авто-синхронизация через ~${hoursLeft} ч.`);
+  }
+
+  if (emailjsReady && now - lastEmail > DAY_MS) {
+    console.log('📧 Авто-рассылка: прошло более 24 часов');
+    await sendEmailReport(false);
+  } else if (emailjsReady) {
+    const hoursLeft = Math.round((DAY_MS - (now - lastEmail)) / 3600000);
+    console.log(`⏳ Следующее письмо через ~${hoursLeft} ч.`);
   }
 }
 
@@ -1248,9 +1361,13 @@ async function updateStorageStatus() {
 
   try {
     const items = await idbGetAll();
+    const lastSync = localStorage.getItem(LAST_SYNC_KEY);
+    const lastSyncStr = lastSync
+      ? new Date(parseInt(lastSync)).toLocaleString('ru-RU')
+      : 'никогда';
     el.className = 'storage-status';
     el.style.display = 'block';
-    info.textContent = `IndexedDB активен. Записей локально: ${items.length}. Нажмите «Обновить с сервера» для синхронизации.`;
+    info.textContent = `Локальных записей: ${items.length}. Последняя синхронизация: ${lastSyncStr}.`;
   } catch(e) {
     el.className = 'storage-status warn';
     el.style.display = 'block';
