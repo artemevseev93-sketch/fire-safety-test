@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Проверка знаний по пожарной безопасности</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    min-height: 100vh; padding: 20px; color: #333;
+  }
+  .container {
+    max-width: 1100px; margin: 0 auto; background: #fff;
+    border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    overflow: hidden;
+  }
+  header {
+    background: linear-gradient(135deg, #d32f2f, #b71c1c);
+    color: #fff; padding: 25px 30px; text-align: center; position: relative;
+  }
+  header h1 { font-size: 1.6em; margin-bottom: 6px; }
+  header p { opacity: .9; font-size: .95em; }
+  .user-badge {
+    position: absolute; top: 15px; right: 20px; background: rgba(255,255,255,.2);
+    padding: 8px 14px; border-radius: 20px; font-size: .85em; display: flex;
+    align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .user-badge button {
+    background: #fff; color: #b71c1c; border: none; padding: 4px 10px;
+    border-radius: 12px; cursor: pointer; font-size: .85em; font-weight: 600;
+  }
+  .user-badge button:hover { background: #ffeaea; }
+
+  .screen { padding: 30px; display: none; }
+  .screen.active { display: block; }
+
+  /* ===== ЛОГИН ===== */
+  .login-box { max-width: 400px; margin: 40px auto; }
+  .login-box h2 { text-align: center; color: #b71c1c; margin-bottom: 25px; }
+  .login-hint {
+    background: #fff3e0; border-left: 4px solid #ff9800; padding: 12px 16px;
+    border-radius: 8px; font-size: .85em; color: #555; margin-top: 20px;
+  }
+  .login-hint code { background: #fff; padding: 2px 6px; border-radius: 4px; color: #b71c1c; }
+
+  /* ===== ФОРМЫ ===== */
+  .form-group { margin-bottom: 15px; }
+  .form-group label { display: block; font-weight: 600; margin-bottom: 6px; font-size: .9em; }
+  .form-group input, .form-group select {
+    width: 100%; padding: 12px; border: 1px solid #ccc;
+    border-radius: 8px; font-size: 1em;
+  }
+  .form-group input:focus, .form-group select:focus {
+    outline: none; border-color: #d32f2f; box-shadow: 0 0 0 3px rgba(211,47,47,.1);
+  }
+
+  .btn {
+    background: linear-gradient(135deg, #d32f2f, #b71c1c);
+    color: #fff; border: none; padding: 14px 32px; border-radius: 8px;
+    font-size: 1em; font-weight: 600; cursor: pointer; transition: .2s;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(211,47,47,.35); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+  .btn-secondary { background: #fff; color: #b71c1c; border: 2px solid #b71c1c; }
+  .btn-secondary:hover { background: #ffebee; box-shadow: none; }
+  .btn-success { background: linear-gradient(135deg, #2e7d32, #1b5e20); }
+  .btn-success:hover { box-shadow: 0 8px 20px rgba(46,125,50,.35); }
+  .btn-danger { background: linear-gradient(135deg, #c62828, #8e0000); }
+
+  /* ===== ВЫБОР РЕЖИМА ===== */
+  .mode-select { display: flex; gap: 15px; margin: 20px 0; flex-wrap: wrap; }
+  .mode-card {
+    flex: 1; min-width: 250px; padding: 20px; border: 2px solid #ddd;
+    border-radius: 12px; cursor: pointer; transition: .25s; background: #fafafa;
+  }
+  .mode-card:hover { border-color: #d32f2f; transform: translateY(-3px); }
+  .mode-card.selected { border-color: #d32f2f; background: #ffebee; box-shadow: 0 0 0 3px rgba(211,47,47,.15); }
+  .mode-card h3 { color: #b71c1c; margin-bottom: 8px; }
+  .mode-card p { font-size: .9em; color: #666; }
+
+  /* ===== ТЕСТ ===== */
+  .test-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 15px 30px; background: #f5f5f5; border-bottom: 2px solid #eee;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .timer {
+    font-size: 1.2em; font-weight: 700; color: #b71c1c;
+    background: #ffebee; padding: 8px 16px; border-radius: 8px;
+  }
+  .timer.warning { background: #ffcdd2; animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .6; } }
+  .progress-info { font-weight: 600; color: #555; }
+  .progress-bar { height: 6px; background: #eee; }
+  .progress-bar-fill {
+    height: 100%; background: linear-gradient(90deg, #d32f2f, #ff5722);
+    transition: width .3s; width: 0%;
+  }
+  .question { padding: 30px; }
+  .question h3 { font-size: 1.15em; margin-bottom: 20px; line-height: 1.5; }
+  .q-number { color: #d32f2f; font-weight: 700; }
+  .answers { display: flex; flex-direction: column; gap: 12px; }
+  .answer {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 18px; border: 2px solid #ddd; border-radius: 10px;
+    cursor: pointer; transition: .2s; background: #fafafa;
+  }
+  .answer:hover { border-color: #d32f2f; background: #fff; }
+  .answer input { margin-top: 3px; transform: scale(1.2); accent-color: #d32f2f; cursor: pointer; }
+  .answer.selected { border-color: #d32f2f; background: #ffebee; }
+  .answer label { cursor: pointer; flex: 1; line-height: 1.4; }
+  .nav-buttons {
+    display: flex; justify-content: space-between; gap: 10px;
+    padding: 20px 30px; border-top: 1px solid #eee; background: #fafafa;
+  }
+
+  /* ===== РЕЗУЛЬТАТЫ ===== */
+  .result-header { text-align: center; padding: 30px; }
+  .result-header .icon { font-size: 60px; margin-bottom: 10px; }
+  .result-header h2 { font-size: 1.8em; margin-bottom: 10px; }
+  .pass { color: #2e7d32; }
+  .fail { color: #c62828; }
+  .score-box { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin: 25px 0; }
+  .score-item { background: #f5f5f5; border-radius: 12px; padding: 20px 30px; text-align: center; min-width: 130px; }
+  .score-item .value { font-size: 2em; font-weight: 700; color: #b71c1c; }
+  .score-item .label { font-size: .85em; color: #666; margin-top: 5px; }
+  .review { padding: 0 30px 30px; }
+  .review h3 { margin-bottom: 15px; color: #b71c1c; }
+  .review-item {
+    padding: 15px; border-radius: 10px; margin-bottom: 12px;
+    border-left: 5px solid #ccc; background: #fafafa;
+  }
+  .review-item.correct { border-left-color: #2e7d32; background: #e8f5e9; }
+  .review-item.wrong { border-left-color: #c62828; background: #ffebee; }
+  .review-item .q { font-weight: 600; margin-bottom: 8px; }
+  .review-item .ans { font-size: .9em; margin: 4px 0; }
+  .review-item .ans.correct-ans { color: #2e7d32; font-weight: 600; }
+  .review-item .ans.wrong-ans { color: #c62828; text-decoration: line-through; }
+  .review-item .explain {
+    font-size: .85em; color: #555; margin-top: 8px;
+    padding-top: 8px; border-top: 1px dashed #ccc; font-style: italic;
+  }
+  .protocol-info {
+    background: #f5f5f5; padding: 20px; border-radius: 10px;
+    margin: 20px 30px; font-size: .9em; line-height: 1.6;
+  }
+  .protocol-info b { color: #b71c1c; }
+  .actions { display: flex; gap: 10px; justify-content: center; padding: 20px 30px 30px; flex-wrap: wrap; }
+
+  /* ===== ПАНЕЛЬ АДМИНА ===== */
+  .admin-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; }
+  .admin-tab {
+    padding: 12px 20px; cursor: pointer; font-weight: 600;
+    border-bottom: 3px solid transparent; color: #666;
+  }
+  .admin-tab.active { color: #b71c1c; border-bottom-color: #b71c1c; }
+
+  .admin-stats { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
+  .stat-card {
+    flex: 1; min-width: 150px; padding: 18px; border-radius: 10px;
+    background: linear-gradient(135deg, #f5f5f5, #eeeeee); text-align: center;
+  }
+  .stat-card .value { font-size: 1.8em; font-weight: 700; color: #b71c1c; }
+  .stat-card .label { font-size: .85em; color: #666; margin-top: 5px; }
+
+  .table-controls {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;
+    align-items: center;
+  }
+  .table-controls input, .table-controls select {
+    padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: .95em;
+  }
+  .table-controls input { flex: 1; min-width: 200px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: .9em; }
+  th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+  th { background: #f5f5f5; font-weight: 600; color: #b71c1c; position: sticky; top: 0; }
+  tr:hover { background: #fafafa; }
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 12px;
+    font-size: .8em; font-weight: 600;
+  }
+  .badge.pass { background: #e8f5e9; color: #2e7d32; }
+  .badge.fail { background: #ffebee; color: #c62828; }
+  .table-wrap { max-height: 500px; overflow-y: auto; border-radius: 8px; border: 1px solid #eee; }
+  .empty { text-align: center; padding: 40px; color: #999; }
+
+  .export-buttons { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .container { box-shadow: none; }
+    .actions, .btn, .user-badge { display: none !important; }
+    .review-item { break-inside: avoid; }
+  }
+  @media (max-width: 600px) {
+    .test-header { flex-direction: column; gap: 10px; }
+    .nav-buttons { flex-direction: column; }
+    .user-badge { position: static; justify-content: center; margin-top: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🔥 Проверка знаний по пожарной безопасности</h1>
+    <p>Вводный и первичный инструктажи (Постановление Правительства РФ №1479)</p>
+    <div class="user-badge" id="userBadge" style="display:none;">
+      <span id="userBadgeText"></span>
+      <button onclick="openChangePassword()">Сменить пароль</button>
+      <button onclick="logout()">Выйти</button>
+    </div>
+  </header>
+
+  <!-- ============ ЭКРАН ЛОГИНА ============ -->
+  <div id="loginScreen" class="screen active">
+    <div class="login-box">
+      <h2>🔐 Вход в систему</h2>
+      <div class="form-group">
+        <label>Логин</label>
+        <input type="text" id="loginUser" placeholder="Введите логин" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>Пароль</label>
+        <input type="password" id="loginPass" placeholder="Введите пароль" autocomplete="current-password">
+      </div>
+      <div style="text-align:center; margin-top:25px;">
+        <button class="btn" id="loginBtn" style="width:100%;">Войти</button>
+      </div>
+
+      <div class="login-hint">
+        <b>Демо-доступы:</b><br>
+        👨‍💼 Администратор: <code>admin</code> / <code>admin123</code><br>
+        👤 Работник: <code>user</code> / <code>user123</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ СТАРТОВЫЙ ЭКРАН ============ -->
+  <div id="startScreen" class="screen">
+    <div class="mode-select">
+      <div class="mode-card selected" data-mode="intro">
+        <h3>📘 Вводный инструктаж</h3>
+        <p>Общие требования пожарной безопасности, нормы и правила для всех работников</p>
+      </div>
+      <div class="mode-card" data-mode="primary">
+        <h3>🏢 Первичный инструктаж</h3>
+        <p>Пожарная безопасность на конкретном рабочем месте, оборудование, эвакуация</p>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>ФИО работника *</label>
+      <input type="text" id="fio" placeholder="Иванов Иван Иванович" required>
+    </div>
+    <div class="form-group">
+      <label>Должность *</label>
+      <input type="text" id="position" placeholder="Слесарь-ремонтник" required>
+    </div>
+    <div class="form-group">
+      <label>Подразделение</label>
+      <input type="text" id="dept" placeholder="Цех №1">
+    </div>
+    <div class="form-group">
+      <label>ФИО инструктирующего</label>
+      <input type="text" id="instructor" placeholder="Петров П.П.">
+    </div>
+
+    <div style="text-align:center; margin-top:25px;">
+      <button class="btn" id="startBtn">Начать тестирование</button>
+    </div>
+    <p style="text-align:center; margin-top:15px; color:#666; font-size:.85em;">
+      ⏱ 30 минут • Проходной балл 80% • Вопросы и ответы перемешиваются
+    </p>
+  </div>
+
+  <!-- ============ ЭКРАН ТЕСТА ============ -->
+  <div id="testScreen" class="screen">
+    <div class="test-header">
+      <div class="progress-info" id="progressInfo">Вопрос 1 из 20</div>
+      <div class="timer" id="timer">30:00</div>
+    </div>
+    <div class="progress-bar"><div class="progress-bar-fill" id="progressFill"></div></div>
+    <div class="question" id="questionBox"></div>
+    <div class="nav-buttons">
+      <button class="btn btn-secondary" id="prevBtn">← Назад</button>
+      <button class="btn" id="nextBtn">Далее →</button>
+    </div>
+  </div>
+
+  <!-- ============ ЭКРАН РЕЗУЛЬТАТОВ ============ -->
+  <div id="resultScreen" class="screen">
+    <div class="result-header" id="resultHeader"></div>
+    <div class="protocol-info" id="protocolInfo"></div>
+    <div class="score-box" id="scoreBox"></div>
+    <div class="review" id="reviewBox"></div>
+    <div class="actions">
+      <button class="btn btn-secondary" onclick="window.print()">🖨 Печать протокола</button>
+      <button class="btn" id="restartBtn">Пройти заново</button>
+    </div>
+  </div>
+
+  <!-- ============ ПАНЕЛЬ АДМИНИСТРАТОРА ============ -->
+  <div id="adminScreen" class="screen">
+    <div class="admin-tabs">
+      <div class="admin-tab active" data-tab="journal">📊 Журнал результатов</div>
+      <div class="admin-tab" data-tab="users">👥 Пользователи</div>
+    </div>
+
+    <!-- Вкладка: Журнал -->
+    <div id="tab-journal" class="admin-tab-content">
+      <div class="admin-stats" id="adminStats"></div>
+
+      <div class="export-buttons">
+        <button class="btn btn-success" onclick="exportToExcel()">📥 Скачать Excel (XLSX)</button>
+        <button class="btn btn-success" onclick="exportToCSV()">📄 Скачать CSV</button>
+        <button class="btn btn-danger" onclick="clearJournal()">🗑 Очистить журнал</button>
+      </div>
+
+      <div class="table-controls">
+        <input type="text" id="searchInput" placeholder="🔍 Поиск по ФИО, должности, подразделению...">
+        <select id="filterMode">
+          <option value="">Все виды инструктажа</option>
+          <option value="intro">Вводный</option>
+          <option value="primary">Первичный</option>
+        </select>
+        <select id="filterResult">
+          <option value="">Все результаты</option>
+          <option value="pass">Только зачёт</option>
+          <option value="fail">Только незачёт</option>
+        </select>
+      </div>
+
+      <div class="table-wrap">
+        <table id="journalTable">
+          <thead>
+            <tr>
+              <th>Дата</th>
+              <th>ФИО</th>
+              <th>Должность</th>
+              <th>Подразделение</th>
+              <th>Инструктаж</th>
+              <th>Результат</th>
+              <th>%</th>
+            </tr>
+          </thead>
+          <tbody id="journalBody"></tbody>
+        </table>
+      </div>
+      <div id="journalEmpty" class="empty" style="display:none;">
+        Пока нет сохранённых результатов
+      </div>
+    </div>
+
+    <!-- Вкладка: Пользователи -->
+    <div id="tab-users" class="admin-tab-content" style="display:none;">
+      <p style="margin-bottom:15px; color:#666;">
+        Список учётных записей системы. Для добавления нового пользователя нажмите кнопку ниже.
+      </p>
+      <div class="export-buttons">
+        <button class="btn" onclick="openAddUser()">➕ Добавить пользователя</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Логин</th>
+              <th>ФИО</th>
+              <th>Роль</th>
+              <th>Действие</th>
+            </tr>
+          </thead>
+          <tbody id="usersBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ МОДАЛЬНОЕ ОКНО: СМЕНА ПАРОЛЯ ============ -->
+<div id="changePassModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:1000; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#fff; border-radius:14px; max-width:420px; width:100%; padding:28px; box-shadow:0 20px 60px rgba(0,0,0,.4);">
+    <h2 style="color:#b71c1c; margin-bottom:20px; text-align:center;">🔑 Смена пароля</h2>
+
+    <div class="form-group">
+      <label>Текущий пароль *</label>
+      <input type="password" id="cpOld" placeholder="Введите текущий пароль" autocomplete="current-password">
+    </div>
+    <div class="form-group">
+      <label>Новый пароль *</label>
+      <input type="password" id="cpNew" placeholder="Минимум 6 символов" autocomplete="new-password">
+    </div>
+    <div class="form-group">
+      <label>Повторите новый пароль *</label>
+      <input type="password" id="cpNew2" placeholder="Повторите новый пароль" autocomplete="new-password">
+    </div>
+
+    <div id="cpError" style="display:none; background:#ffebee; color:#c62828; padding:10px 14px; border-radius:8px; font-size:.9em; margin-bottom:15px;"></div>
+
+    <div style="display:flex; gap:10px; justify-content:center; margin-top:10px;">
+      <button class="btn btn-secondary" onclick="closeChangePassword()">Отмена</button>
+      <button class="btn" onclick="submitChangePassword()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ====================== ПОЛЬЗОВАТЕЛИ (демо) ====================== */
+// В реальном проекте — хранить хэши паролей на сервере!
+// Здесь для демонстрации — в localStorage.
+const DEFAULT_USERS = [
+  { login: 'admin', pass: 'admin123', fio: 'Администратор системы', role: 'admin' },
+  { login: 'user',  pass: 'user123',  fio: 'Иванов Иван Иванович',  role: 'user'  }
+];
+
+function getUsers() {
+  const raw = localStorage.getItem('pb_users');
+  if (!raw) {
+    localStorage.setItem('pb_users', JSON.stringify(DEFAULT_USERS));
+    return DEFAULT_USERS;
+  }
+  try { return JSON.parse(raw); } catch(e) { return DEFAULT_USERS; }
+}
+function saveUsers(users) { localStorage.setItem('pb_users', JSON.stringify(users)); }
+
+let currentUser = null;
+
+/* ====================== АВТОРИЗАЦИЯ ====================== */
+document.getElementById('loginBtn').addEventListener('click', login);
+document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+document.getElementById('loginUser').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+function login() {
+  const login = document.getElementById('loginUser').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  const users = getUsers();
+  const u = users.find(x => x.login === login && x.pass === pass);
+
+  if (!u) {
+    alert('❌ Неверный логин или пароль');
+    return;
+  }
+  currentUser = u;
+  localStorage.setItem('pb_currentUser', JSON.stringify(u));
+  showMainScreen();
+}
+
+function logout() {
+  if (!confirm('Выйти из системы?')) return;
+  currentUser = null;
+  localStorage.removeItem('pb_currentUser');
+  document.getElementById('userBadge').style.display = 'none';
+  showScreen('loginScreen');
+  document.getElementById('loginPass').value = '';
+}
+
+function showMainScreen() {
+  document.getElementById('userBadge').style.display = 'flex';
+  document.getElementById('userBadgeText').textContent =
+    `${currentUser.fio} (${currentUser.role === 'admin' ? 'админ' : 'работник'})`;
+
+  if (currentUser.role === 'admin') {
+    renderAdmin();
+    showScreen('adminScreen');
+  } else {
+    // Обычный работник — заполняем ФИО автоматически
+    document.getElementById('fio').value = currentUser.fio || '';
+    showScreen('startScreen');
+  }
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// Автовход, если уже были авторизованы
+(function autoLogin() {
+  const saved = localStorage.getItem('pb_currentUser');
+  if (saved) {
+    try {
+      currentUser = JSON.parse(saved);
+      // подтягиваем актуальные данные пользователя из хранилища
+      const fresh = getUsers().find(u => u.login === currentUser.login);
+      if (fresh) currentUser = fresh;
+      showMainScreen();
+    } catch(e) { localStorage.removeItem('pb_currentUser'); }
+  }
+})();
+
+/* ====================== СМЕНА ПАРОЛЯ ====================== */
+function openChangePassword() {
+  if (!currentUser) return;
+  document.getElementById('cpOld').value = '';
+  document.getElementById('cpNew').value = '';
+  document.getElementById('cpNew2').value = '';
+  document.getElementById('cpError').style.display = 'none';
+  const modal = document.getElementById('changePassModal');
+  modal.style.display = 'flex';
+  setTimeout(() => document.getElementById('cpOld').focus(), 50);
+}
+
+function closeChangePassword() {
+  document.getElementById('changePassModal').style.display = 'none';
+}
+
+function submitChangePassword() {
+  const oldPass = document.getElementById('cpOld').value;
+  const newPass = document.getElementById('cpNew').value;
+  const newPass2 = document.getElementById('cpNew2').value;
+  const errEl = document.getElementById('cpError');
+
+  const showErr = (msg) => {
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+  };
+
+  if (!oldPass || !newPass || !newPass2) {
+    showErr('Заполните все поля');
+    return;
+  }
+  if (newPass.length < 6) {
+    showErr('Новый пароль должен содержать минимум 6 символов');
+    return;
+  }
+  if (newPass !== newPass2) {
+    showErr('Новые пароли не совпадают');
+    return;
+  }
+  if (newPass === oldPass) {
+    showErr('Новый пароль должен отличаться от текущего');
+    return;
+  }
+
+  const users = getUsers();
+  const idx = users.findIndex(u => u.login === currentUser.login);
+
+  if (idx === -1) {
+    showErr('Пользователь не найден');
+    return;
+  }
+  if (users[idx].pass !== oldPass) {
+    showErr('Неверный текущий пароль');
+    return;
+  }
+
+  users[idx].pass = newPass;
+  saveUsers(users);
+
+  // Обновляем данные текущей сессии
+  currentUser.pass = newPass;
+  localStorage.setItem('pb_currentUser', JSON.stringify(currentUser));
+
+  closeChangePassword();
+  alert('✅ Пароль успешно изменён');
+}
+
+// Закрытие по Esc и клику по фону
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' &&
+      document.getElementById('changePassModal').style.display === 'flex') {
+    closeChangePassword();
+  }
+});
+document.getElementById('changePassModal').addEventListener('click', e => {
+  if (e.target.id === 'changePassModal') closeChangePassword();
+});
+
+/* ====================== БАЗА ВОПРОСОВ ====================== */
+const QUESTIONS = {
+  intro: [
+    { q: "Какой документ устанавливает общие требования пожарной безопасности в РФ?",
+      a: ["Постановление Правительства РФ №1479 «Об утверждении Правил противопожарного режима»",
+          "Трудовой кодекс РФ", "ГОСТ 12.0.004-2015", "Федеральный закон №426-ФЗ"],
+      correct: [0], explain: "Основной документ — Постановление Правительства РФ от 16.09.2020 №1479." },
+    { q: "Какие виды пожарных инструктажей существуют?",
+      a: ["Вводный, первичный, повторный, внеплановый, целевой",
+          "Только вводный и первичный", "Общий и специальный", "Плановый и внеплановый"],
+      correct: [0], explain: "Приказ МЧС №806 предусматривает 5 видов инструктажей." },
+    { q: "Кто проводит вводный противопожарный инструктаж?",
+      a: ["Специалист по пожарной безопасности или лицо, назначенное приказом руководителя",
+          "Непосредственный руководитель работ", "Сам работник самостоятельно", "Инспектор ГПН"],
+      correct: [0], explain: "Вводный инструктаж проводит уполномоченное лицо." },
+    { q: "С какой периодичностью проводится повторный противопожарный инструктаж?",
+      a: ["Не реже 1 раза в год", "Не реже 1 раза в 6 месяцев",
+          "Не реже 1 раза в 3 месяца", "Не реже 1 раза в 2 года"],
+      correct: [0], explain: "Повторный инструктаж — не реже 1 раза в год." },
+    { q: "Какие действия необходимо предпринять при обнаружении пожара?",
+      a: ["Сообщить по телефону 101 или 112, оповестить людей, приступить к эвакуации",
+          "Немедленно покинуть здание, не сообщая никому",
+          "Попытаться потушить пожар без вызова МЧС", "Продолжить работу до прибытия руководителя"],
+      correct: [0], explain: "Сообщить → оповестить → эвакуация → тушение (при возможности)." },
+    { q: "Что относится к первичным средствам пожаротушения?",
+      a: ["Огнетушители, пожарные краны, ящики с песком, кошма",
+          "Автоматическая пожарная сигнализация", "Пожарная машина", "Система дымоудаления"],
+      correct: [0], explain: "Первичные средства — огнетушители, пожарные щиты, песок, кошма." },
+    { q: "По какому телефону вызывается пожарная охрана?",
+      a: ["101 или 112", "102", "103", "104"],
+      correct: [0], explain: "Единый номер спасения — 112, пожарная охрана — 101." },
+    { q: "Что запрещается делать в помещениях с массовым пребыванием людей?",
+      a: ["Курить, применять открытый огонь, загромождать эвакуационные пути",
+          "Проводить уборку", "Открывать окна", "Использовать оргтехнику"],
+      correct: [0], explain: "Курение и открытый огонь запрещены вне отведённых мест." },
+    { q: "Что такое эвакуационный выход?",
+      a: ["Выход, ведущий на путь эвакуации, непосредственно наружу или в безопасную зону",
+          "Любая дверь в здании", "Окно на 1 этаже", "Выход из кабинета руководителя"],
+      correct: [0], explain: "Согласно ФЗ №123." },
+    { q: "Какие огнетушители применяются для тушения электрооборудования под напряжением до 1000 В?",
+      a: ["Порошковые и углекислотные", "Водные", "Пенные", "Любые"],
+      correct: [0], explain: "Вода и пена проводят ток." },
+    { q: "Что необходимо сделать перед использованием огнетушителя?",
+      a: ["Сорвать пломбу и выдернуть чеку", "Перевернуть вверх дном",
+          "Нагреть корпус", "Открыть крышку"],
+      correct: [0], explain: "Порядок: сорвать пломбу → выдернуть чеку → направить → нажать." },
+    { q: "Как часто проводится проверка огнетушителей с выборочным вскрытием?",
+      a: ["Не реже 1 раза в 5 лет", "Каждый месяц", "Раз в 10 лет", "Раз в 3 года"],
+      correct: [0], explain: "Согласно СП 9.13130.2009." },
+    { q: "Кто несёт ответственность за пожарную безопасность организации?",
+      a: ["Руководитель организации", "Только специалист по ПБ",
+          "Собственник здания", "Государственный инспектор"],
+      correct: [0], explain: "Ст. 38 ФЗ №69-ФЗ." },
+    { q: "Что относится к опасным факторам пожара?",
+      a: ["Пламя, высокая температура, дым, токсичные продукты горения, недостаток кислорода",
+          "Только пламя", "Только дым", "Шум и вибрация"],
+      correct: [0], explain: "ОФП по ГОСТ 12.1.004-91." },
+    { q: "Разрешено ли использовать лифт при пожаре?",
+      a: ["Запрещено", "Разрешено", "Разрешено только грузовой", "Разрешено с разрешения охраны"],
+      correct: [0], explain: "Лифты при пожаре использовать категорически запрещено." },
+    { q: "Как правильно эвакуироваться из задымлённого помещения?",
+      a: ["Пригнувшись или ползком, закрыв дыхательные пути влажной тканью",
+          "В полный рост, быстро бегом", "Через лифт", "Оставаться на месте"],
+      correct: [0], explain: "Дым скапливается вверху." },
+    { q: "Что такое план эвакуации?",
+      a: ["Документ с указанием путей эвакуации, выходов и мест размещения средств ПБ",
+          "Схема расположения офисов", "График работы", "Список сотрудников"],
+      correct: [0], explain: "План эвакуации вывешивается на видных местах." },
+    { q: "Чем тушат возгорание нефтепродуктов?",
+      a: ["Порошковыми или пленкообразующими огнетушителями, песком, кошмой",
+          "Водой", "Компактной струёй воды", "Паром"],
+      correct: [0], explain: "Вода разбрызгивает горящее масло." },
+    { q: "Что запрещено при тушении пожара в помещении?",
+      a: ["Открывать окна и двери без необходимости — это усиливает тягу",
+          "Использовать огнетушитель", "Закрывать двери", "Выключать электричество"],
+      correct: [0], explain: "Приток воздуха усиливает горение." },
+    { q: "Какой документ оформляется при проведении противопожарного инструктажа?",
+      a: ["Журнал учёта инструктажей по пожарной безопасности",
+          "Акт выполненных работ", "Справка о доходах", "Табель учёта рабочего времени"],
+      correct: [0], explain: "Факт проведения инструктажа фиксируется в журнале." }
+  ],
+  primary: [
+    { q: "Когда проводится первичный противопожарный инструктаж на рабочем месте?",
+      a: ["До начала самостоятельной работы", "Через неделю после приёма",
+          "Раз в месяц", "По желанию работника"],
+      correct: [0], explain: "Первичный инструктаж — до начала самостоятельной работы." },
+    { q: "Кто проводит первичный инструктаж на рабочем месте?",
+      a: ["Непосредственный руководитель работ", "Специалист по ПБ",
+          "Инспектор ГПН", "Директор"],
+      correct: [0], explain: "Первичный инструктаж проводит непосредственный руководитель." },
+    { q: "Что входит в первичный инструктаж на рабочем месте?",
+      a: ["Ознакомление с ПБ конкретного помещения, оборудованием, планом эвакуации, средствами ПБ",
+          "Только общие правила", "Только инструкция по охране труда", "Только действия при пожаре"],
+      correct: [0], explain: "Первичный инструктаж включает специфику рабочего места." },
+    { q: "Как часто проводится повторный инструктаж на рабочем месте?",
+      a: ["Не реже 1 раза в год", "Не реже 1 раза в 3 месяца", "Раз в 5 лет", "Не проводится"],
+      correct: [0], explain: "Повторный инструктаж — не реже 1 раза в год." },
+    { q: "В каких случаях проводится внеплановый инструктаж?",
+      a: ["При изменении технологического процесса, нарушении требований ПБ, перерыве в работе более 60 дней",
+          "Только при приёме на работу", "Раз в месяц", "По желанию руководителя"],
+      correct: [0], explain: "Внеплановый — при изменениях, авариях, нарушениях." },
+    { q: "Что необходимо проверить перед началом работы с электрооборудованием?",
+      a: ["Целостность изоляции, розеток, вилок, отсутствие повреждений",
+          "Только наличие электричества", "Только напряжение в сети", "Ничего проверять не нужно"],
+      correct: [0], explain: "Перед работой осматривают розетки, вилки, кабели." },
+    { q: "Что запрещается делать при эксплуатации электрооборудования?",
+      a: ["Использовать неисправные приборы, оставлять их без присмотра, перегружать сеть",
+          "Выключать приборы после работы", "Проводить осмотр", "Использовать по назначению"],
+      correct: [0], explain: "Запрещено: неисправные приборы, перегрузка, эксплуатация без присмотра." },
+    { q: "Где должны храниться горючие жидкости на рабочем месте?",
+      a: ["В специальных металлических шкафах, в закрытой таре, в количестве не более сменной нормы",
+          "В любом удобном месте", "На открытых полках", "В пластиковых бутылках"],
+      correct: [0], explain: "ЛВЖ и ГЖ хранят в металлической таре в спецшкафах." },
+    { q: "Что делать при загорании на рабочем месте?",
+      a: ["Сообщить по 101/112, применить первичные средства пожаротушения, эвакуироваться",
+          "Продолжить работу", "Закрыть помещение и уйти", "Ждать руководителя"],
+      correct: [0], explain: "Вызов → оповещение → тушение → эвакуация." },
+    { q: "Где находится ближайший огнетушитель на вашем рабочем месте?",
+      a: ["Согласно плану эвакуации и схеме размещения средств ПБ",
+          "В подвале", "В другом здании", "Не имеет значения"],
+      correct: [0], explain: "Работник обязан знать расположение первичных средств ПБ." },
+    { q: "Что необходимо сделать при уходе с рабочего места?",
+      a: ["Выключить электроприборы, освещение, закрыть окна, убедиться в отсутствии источников возгорания",
+          "Оставить всё включённым", "Закрыть дверь", "Ничего"],
+      correct: [0], explain: "Перед уходом отключить оборудование, освещение, закрыть окна." },
+    { q: "Что запрещается на рабочем месте?",
+      a: ["Курить, применять открытый огонь, хранить ЛВЖ, загромождать проходы",
+          "Проветривать помещение", "Использовать спецодежду", "Мыть руки"],
+      correct: [0], explain: "Курение только в отведённых местах, проходы не загромождать." },
+    { q: "Какие действия при срабатывании пожарной сигнализации?",
+      a: ["Прекратить работу, эвакуироваться согласно плану, оповестить коллег",
+          "Продолжить работу", "Отключить сигнализацию", "Закрыться в кабинете"],
+      correct: [0], explain: "При сигнале тревоги — немедленная эвакуация по плану." },
+    { q: "Что нужно сделать при обнаружении запаха гари или дыма?",
+      a: ["Сообщить руководителю и в пожарную охрану, выяснить причину",
+          "Не обращать внимания", "Открыть окна и продолжить работу", "Уйти домой"],
+      correct: [0], explain: "Запах гари/дыма — признак возгорания." },
+    { q: "Как правильно применять углекислотный огнетушитель?",
+      a: ["Направить раструб на очаг, нажать на рычаг, держать за изолированную рукоятку",
+          "Перевернуть и ударить", "Открыть крышку", "Разбить корпус"],
+      correct: [0], explain: "Держать только за рукоятку — раструб охлаждается." },
+    { q: "Что необходимо знать работнику о путях эвакуации?",
+      a: ["Расположение выходов, план эвакуации, место сбора",
+          "Только номер телефона", "Ничего", "Только имя директора"],
+      correct: [0], explain: "Каждый работник обязан знать эвакуационные выходы." },
+    { q: "Как часто проверяется работоспособность пожарных кранов?",
+      a: ["Не реже 1 раза в 6 месяцев", "Раз в 5 лет", "Каждый день", "Раз в месяц"],
+      correct: [0], explain: "Проверка пожарных кранов — не реже 1 раза в 6 месяцев." },
+    { q: "Что запрещено при эксплуатации отопительных приборов?",
+      a: ["Сушить вещи, размещать горючие материалы рядом, использовать неисправные приборы",
+          "Проветривать помещение", "Мыть полы", "Использовать по назначению"],
+      correct: [0], explain: "Запрещено сушить вещи, размещать горючие материалы ближе 0,5 м." },
+    { q: "Какие документы должны быть на рабочем месте по пожарной безопасности?",
+      a: ["Инструкция о мерах ПБ, план эвакуации, журнал инструктажей, памятки",
+          "Только трудовой договор", "Только приказ о приёме", "Ничего"],
+      correct: [0], explain: "Инструкции по ПБ, план эвакуации, журнал инструктажей, памятки." },
+    { q: "Что делать после ликвидации возгорания?",
+      a: ["Сообщить руководителю, сохранить обстановку для расследования, составить акт",
+          "Сразу убрать следы", "Никому не сообщать", "Уйти домой"],
+      correct: [0], explain: "Сообщить руководству, сохранить обстановку до расследования." }
+  ]
+};
+
+/* ====================== ЛОГИКА ТЕСТА ====================== */
+const TEST_TIME = 30 * 60;
+let currentMode = 'intro';
+let questions = [];
+let currentIndex = 0;
+let userAnswers = [];
+let timerInterval = null;
+let timeLeft = TEST_TIME;
+let startTime = null;
+
+document.querySelectorAll('.mode-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    currentMode = card.dataset.mode;
+  });
+});
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function prepareQuestions(mode) {
+  return shuffle(QUESTIONS[mode]).map(q => {
+    const indexed = q.a.map((text, i) => ({ text, originalIndex: i }));
+    const shuffled = shuffle(indexed);
+    return {
+      ...q,
+      shuffledAnswers: shuffled,
+      correctShuffled: q.correct.map(ci => shuffled.findIndex(a => a.originalIndex === ci))
+    };
+  });
+}
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  const fio = document.getElementById('fio').value.trim();
+  const position = document.getElementById('position').value.trim();
+  if (!fio || !position) { alert('Пожалуйста, заполните ФИО и должность'); return; }
+
+  questions = prepareQuestions(currentMode);
+  userAnswers = questions.map(() => []);
+  currentIndex = 0;
+  timeLeft = TEST_TIME;
+  startTime = new Date();
+
+  showScreen('testScreen');
+  renderQuestion();
+  startTimer();
+});
+
+function startTimer() {
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimerDisplay();
+    if (timeLeft <= 0) { clearInterval(timerInterval); finishTest(true); }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  const el = document.getElementById('timer');
+  el.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  if (timeLeft <= 300) el.classList.add('warning');
+}
+
+function renderQuestion() {
+  const q = questions[currentIndex];
+  const total = questions.length;
+  document.getElementById('progressInfo').textContent = `Вопрос ${currentIndex + 1} из ${total}`;
+  document.getElementById('progressFill').style.width = ((currentIndex) / total * 100) + '%';
+
+  const isMulti = q.correct.length > 1;
+  const box = document.getElementById('questionBox');
+  box.innerHTML = `
+    <h3><span class="q-number">Вопрос ${currentIndex + 1}.</span> ${q.q}
+      ${isMulti ? '<br><small style="color:#d32f2f;font-weight:400;">(несколько правильных ответов)</small>' : ''}
+    </h3>
+    <div class="answers">
+      ${q.shuffledAnswers.map((a, i) => {
+        const checked = userAnswers[currentIndex].includes(i);
+        return `<div class="answer ${checked ? 'selected' : ''}" data-index="${i}">
+            <input type="${isMulti ? 'checkbox' : 'radio'}" name="q${currentIndex}" ${checked ? 'checked' : ''}>
+            <label>${a.text}</label>
+          </div>`;
+      }).join('')}
+    </div>`;
+
+  box.querySelectorAll('.answer').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = parseInt(el.dataset.index);
+      if (isMulti) {
+        const cur = userAnswers[currentIndex];
+        const pos = cur.indexOf(idx);
+        if (pos > -1) cur.splice(pos, 1); else cur.push(idx);
+      } else {
+        userAnswers[currentIndex] = [idx];
+      }
+      renderQuestion();
+    });
+  });
+
+  document.getElementById('prevBtn').disabled = currentIndex === 0;
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.textContent = (currentIndex === total - 1) ? 'Завершить ✓' : 'Далее →';
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => {
+  if (currentIndex > 0) { currentIndex--; renderQuestion(); }
+});
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+  if (currentIndex < questions.length - 1) { currentIndex++; renderQuestion(); }
+  else if (confirm('Завершить тестирование и получить результат?')) finishTest(false);
+});
+
+/* ====================== ЖУРНАЛ (localStorage) ====================== */
+function getJournal() {
+  try { return JSON.parse(localStorage.getItem('pb_journal') || '[]'); }
+  catch(e) { return []; }
+}
+function saveJournal(items) { localStorage.setItem('pb_journal', JSON.stringify(items)); }
+
+function saveResult(data) {
+  const journal = getJournal();
+  journal.push(data);
+  saveJournal(journal);
+}
+
+/* ====================== ЗАВЕРШЕНИЕ ТЕСТА ====================== */
+function finishTest(timeout) {
+  clearInterval(timerInterval);
+
+  let correctCount = 0;
+  questions.forEach((q, i) => {
+    const ua = [...userAnswers[i]].sort().join(',');
+    const ca = [...q.correctShuffled].sort().join(',');
+    if (ua === ca) correctCount++;
+  });
+
+  const total = questions.length;
+  const percent = Math.round(correctCount / total * 100);
+  const passed = percent >= 80;
+
+  const fio = document.getElementById('fio').value.trim();
+  const position = document.getElementById('position').value.trim();
+  const dept = document.getElementById('dept').value.trim() || '—';
+  const instructor = document.getElementById('instructor').value.trim() || '___________________';
+  const now = new Date();
+  const duration = Math.floor((TEST_TIME - timeLeft) / 60);
+
+  // 💾 Сохраняем в журнал
+  saveResult({
+    date: now.toISOString(),
+    dateStr: now.toLocaleString('ru-RU'),
+    fio, position, dept, instructor,
+    mode: currentMode,
+    modeName: currentMode === 'intro' ? 'Вводный' : 'Первичный',
+    correct: correctCount,
+    total,
+    percent,
+    passed,
+    duration,
+    operator: currentUser ? currentUser.login : '—'
+  });
+
+  // Заголовок
+  document.getElementById('resultHeader').innerHTML = `
+    <div class="icon">${passed ? '✅' : '❌'}</div>
+    <h2 class="${passed ? 'pass' : 'fail'}">${passed ? 'ЗАЧЁТ' : 'НЕЗАЧЁТ'}</h2>
+    <p style="color:#666;">${timeout ? '⏰ Время истекло. ' : ''}${passed ? 'Работник успешно прошёл проверку знаний.' : 'Требуется повторный инструктаж и повторная проверка.'}</p>`;
+
+  const modeName = currentMode === 'intro' ? 'Вводный противопожарный инструктаж' : 'Первичный противопожарный инструктаж на рабочем месте';
+  document.getElementById('protocolInfo').innerHTML = `
+    <b>ПРОТОКОЛ проверки знаний по пожарной безопасности</b><br>
+    <b>Вид инструктажа:</b> ${modeName}<br>
+    <b>ФИО:</b> ${fio}<br>
+    <b>Должность:</b> ${position}<br>
+    <b>Подразделение:</b> ${dept}<br>
+    <b>Дата и время:</b> ${now.toLocaleString('ru-RU')}<br>
+    <b>Инструктирующий:</b> ${instructor}<br>
+    <b>Затрачено времени:</b> ~${duration} мин.<br>
+    <b>Проходной балл:</b> 80%`;
+
+  document.getElementById('scoreBox').innerHTML = `
+    <div class="score-item"><div class="value">${correctCount}/${total}</div><div class="label">Правильных ответов</div></div>
+    <div class="score-item"><div class="value">${percent}%</div><div class="label">Результат</div></div>
+    <div class="score-item"><div class="value">${passed ? '✓' : '✗'}</div><div class="label">${passed ? 'Зачёт' : 'Незачёт'}</div></div>`;
+
+  document.getElementById('reviewBox').innerHTML = '<h3>📋 Разбор ответов</h3>' + questions.map((q, i) => {
+    const ua = [...userAnswers[i]].sort().join(',');
+    const ca = [...q.correctShuffled].sort().join(',');
+    const isCorrect = ua === ca;
+    const answersHtml = q.shuffledAnswers.map((a, idx) => {
+      const wasChosen = userAnswers[i].includes(idx);
+      const isRight = q.correctShuffled.includes(idx);
+      let cls = '';
+      if (isRight) cls = 'correct-ans';
+      else if (wasChosen) cls = 'wrong-ans';
+      const mark = isRight ? '✓' : (wasChosen ? '✗' : '·');
+      return `<div class="ans ${cls}">${mark} ${a.text}</div>`;
+    }).join('');
+    return `<div class="review-item ${isCorrect ? 'correct' : 'wrong'}">
+        <div class="q">${i + 1}. ${q.q}</div>
+        ${answersHtml}
+        <div class="explain">💡 ${q.explain}</div>
+      </div>`;
+  }).join('');
+
+  showScreen('resultScreen');
+}
+
+document.getElementById('restartBtn').addEventListener('click', () => {
+  document.getElementById('timer').classList.remove('warning');
+  if (currentUser && currentUser.role === 'admin') {
+    renderAdmin();
+    showScreen('adminScreen');
+  } else {
+    showScreen('startScreen');
+  }
+});
+
+/* ====================== ПАНЕЛЬ АДМИНА ====================== */
+document.querySelectorAll('.admin-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.admin-tab-content').forEach(c => c.style.display = 'none');
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).style.display = 'block';
+    if (tab.dataset.tab === 'users') renderUsers();
+  });
+});
+
+function renderAdmin() {
+  renderJournal();
+  renderStats();
+}
+
+function renderStats() {
+  const j = getJournal();
+  const total = j.length;
+  const passCount = j.filter(x => x.passed).length;
+  const failCount = total - passCount;
+  const percentPass = total ? Math.round(passCount / total * 100) : 0;
+
+  document.getElementById('adminStats').innerHTML = `
+    <div class="stat-card"><div class="value">${total}</div><div class="label">Всего попыток</div></div>
+    <div class="stat-card"><div class="value" style="color:#2e7d32;">${passCount}</div><div class="label">Зачёт</div></div>
+    <div class="stat-card"><div class="value" style="color:#c62828;">${failCount}</div><div class="label">Незачёт</div></div>
+    <div class="stat-card"><div class="value">${percentPass}%</div><div class="label">Успешных</div></div>`;
+}
+
+function getFilteredJournal() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const modeF = document.getElementById('filterMode').value;
+  const resultF = document.getElementById('filterResult').value;
+
+  return getJournal().filter(item => {
+    if (modeF && item.mode !== modeF) return false;
+    if (resultF === 'pass' && !item.passed) return false;
+    if (resultF === 'fail' && item.passed) return false;
+    if (search) {
+      const hay = (item.fio + ' ' + item.position + ' ' + item.dept).toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  }).reverse();
+}
+
+function renderJournal() {
+  const items = getFilteredJournal();
+  const tbody = document.getElementById('journalBody');
+  const emptyEl = document.getElementById('journalEmpty');
+
+  if (items.length === 0) {
+    tbody.innerHTML = '';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  tbody.innerHTML = items.map(it => `
+    <tr>
+      <td>${it.dateStr}</td>
+      <td>${escapeHtml(it.fio)}</td>
+      <td>${escapeHtml(it.position)}</td>
+      <td>${escapeHtml(it.dept)}</td>
+      <td>${it.modeName}</td>
+      <td><span class="badge ${it.passed ? 'pass' : 'fail'}">${it.passed ? 'Зачёт' : 'Незачёт'}</span></td>
+      <td><b>${it.percent}%</b> (${it.correct}/${it.total})</td>
+    </tr>`).join('');
+}
+
+['searchInput', 'filterMode', 'filterResult'].forEach(id => {
+  document.getElementById(id).addEventListener('input', renderJournal);
+  document.getElementById(id).addEventListener('change', renderJournal);
+});
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function clearJournal() {
+  if (!confirm('Удалить все записи журнала? Действие необратимо.')) return;
+  localStorage.removeItem('pb_journal');
+  renderJournal();
+  renderStats();
+}
+
+/* ====================== ПОЛЬЗОВАТЕЛИ (админ) ====================== */
+function renderUsers() {
+  const users = getUsers();
+  document.getElementById('usersBody').innerHTML = users.map(u => `
+    <tr>
+      <td><b>${escapeHtml(u.login)}</b></td>
+      <td>${escapeHtml(u.fio)}</td>
+      <td>${u.role === 'admin' ? '👨‍💼 Администратор' : '👤 Работник'}</td>
+      <td>${u.login === 'admin' ? '—' : `<button class="btn btn-secondary" style="padding:6px 12px;font-size:.85em;" onclick="removeUser('${u.login}')">Удалить</button>`}</td>
+    </tr>`).join('');
+}
+
+function openAddUser() {
+  const login = prompt('Логин нового пользователя:');
+  if (!login) return;
+  const pass = prompt('Пароль:');
+  if (!pass) return;
+  const fio = prompt('ФИО:');
+  if (!fio) return;
+  const role = confirm('Сделать администратором? OK — да, Отмена — обычный работник.') ? 'admin' : 'user';
+
+  const users = getUsers();
+  if (users.some(u => u.login === login)) { alert('Такой логин уже существует'); return; }
+  users.push({ login, pass, fio, role });
+  saveUsers(users);
+  renderUsers();
+}
+
+function removeUser(login) {
+  if (!confirm(`Удалить пользователя "${login}"?`)) return;
+  saveUsers(getUsers().filter(u => u.login !== login));
+  renderUsers();
+}
+
+/* ====================== ЭКСПОРТ ====================== */
+
+function getExportData() {
+  // Все данные журнала (без фильтров — для полной выгрузки)
+  return getJournal().slice().reverse().map((it, i) => ({
+    '№': i + 1,
+    'Дата и время': it.dateStr,
+    'ФИО': it.fio,
+    'Должность': it.position,
+    'Подразделение': it.dept,
+    'Вид инструктажа': it.modeName,
+    'Инструктирующий': it.instructor,
+    'Правильных': it.correct,
+    'Всего вопросов': it.total,
+    'Процент': it.percent,
+    'Результат': it.passed ? 'Зачёт' : 'Незачёт',
+    'Время (мин)': it.duration,
+    'Оператор': it.operator || '—'
+  }));
+}
+
+function exportToExcel() {
+  const data = getExportData();
+  if (data.length === 0) { alert('Журнал пуст — нечего выгружать'); return; }
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  // Автоширина колонок
+  const cols = Object.keys(data[0]).map(k => ({ wch: Math.max(k.length, 15) }));
+  ws['!cols'] = cols;
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Журнал ПБ');
+
+  const dateStr = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `Журнал_ПБ_${dateStr}.xlsx`);
+}
+
+function exportToCSV() {
+  const data = getExportData();
+  if (data.length === 0) { alert('Журнал пуст — нечего выгружать'); return; }
+
+  const headers = Object.keys(data[0]);
+  const sep = ';'; // точка с запятой — корректно открывается в русском Excel
+
+  const csvLines = [
+    headers.join(sep),
+    ...data.map(row => headers.map(h => {
+      let v = row[h] === undefined || row[h] === null ? '' : String(row[h]);
+      // Экранирование кавычек и разделителей
+      if (v.includes(sep) || v.includes('"') || v.includes('\n')) {
+        v = '"' + v.replace(/"/g, '""') + '"';
+      }
+      return v;
+    }).join(sep))
+  ];
+
+  // BOM для корректной кодировки в Excel
+  const blob = new Blob(['\uFEFF' + csvLines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `Журнал_ПБ_${dateStr}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
