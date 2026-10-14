@@ -214,7 +214,7 @@
     </div>
   </header>
 
-  <!-- ЭКРАН ВХОДА ДЛЯ РАБОТНИКА (создание пользователя) -->
+  <!-- ЭКРАН ВХОДА ДЛЯ РАБОТНИКА -->
   <div id="loginScreen" class="screen active">
     <div class="login-box">
       <h2>👤 Регистрация работника</h2>
@@ -451,7 +451,7 @@
 <script>
 /* ====================== НАСТРОЙКИ JSONBIN.IO ====================== */
 const JSONBIN_BIN_ID = '6acf56feac6210605a305824';
-const JSONBIN_MASTER_KEY = 'ВСТАВЬТЕ_СЮДА_ВАШ_X_MASTER_KEY'; // <-- замените на ваш ключ
+const JSONBIN_MASTER_KEY = '$2a$10$.l7.jFmxksStbOsG4kr.RecZ7xYlnU8qXJD53KHyvX6w.eMgqjYra';
 const JSONBIN_API = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
 /* ====================== IndexedDB ====================== */
@@ -464,13 +464,10 @@ function openIDB() {
   return new Promise((resolve, reject) => {
     if (idbInstance) return resolve(idbInstance);
     const request = indexedDB.open(IDB_NAME, IDB_VERSION);
-
     request.onupgradeneeded = (e) => {
       const db = e.target.result;
       if (!db.objectStoreNames.contains(IDB_STORE)) {
-        const store = db.createObjectStore(IDB_STORE, {
-          keyPath: 'id', autoIncrement: true
-        });
+        const store = db.createObjectStore(IDB_STORE, { keyPath: 'id', autoIncrement: true });
         store.createIndex('date', 'date', { unique: false });
         store.createIndex('fio', 'fio', { unique: false });
         store.createIndex('mode', 'mode', { unique: false });
@@ -492,30 +489,12 @@ async function idbAdd(item) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(IDB_STORE, 'readwrite');
     const store = tx.objectStore(IDB_STORE);
-    const record = { ...item, uniqueKey: makeRecordKey(item) };
-    const req = store.add(record);
+    const req = store.add({ ...item, uniqueKey: makeRecordKey(item) });
     req.onsuccess = () => resolve(req.result);
     req.onerror = (e) => {
       if (e.target.error.name === 'ConstraintError') resolve(null);
       else reject(e.target.error);
     };
-  });
-}
-
-async function idbAddMany(items) {
-  const db = await openIDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IDB_STORE, 'readwrite');
-    const store = tx.objectStore(IDB_STORE);
-    let added = 0, skipped = 0;
-    items.forEach(item => {
-      const record = { ...item, uniqueKey: makeRecordKey(item) };
-      const req = store.add(record);
-      req.onsuccess = () => added++;
-      req.onerror = (e) => { if (e.target.error.name === 'ConstraintError') skipped++; };
-    });
-    tx.oncomplete = () => resolve({ added, skipped });
-    tx.onerror = (e) => reject(e.target.error);
   });
 }
 
@@ -561,7 +540,7 @@ function saveUsers(users) { localStorage.setItem('pb_users', JSON.stringify(user
 
 let currentUser = null;
 
-/* ====================== ГЕНЕРАЦИЯ ЛОГИНА ====================== */
+/* ====================== ГЕНЕРАЦИЯ ЛОГИНА/ПАРОЛЯ ====================== */
 function generateLogin(fio) {
   const users = getUsers();
   const parts = fio.toLowerCase().replace(/[^a-zа-яё\s]/g, '').split(/\s+/).filter(Boolean);
@@ -576,13 +555,8 @@ function generateLogin(fio) {
     'х':'h','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'
   };
   let login = base.split('').map(ch => translitMap[ch] || ch).join('');
-
-  let candidate = login;
-  let counter = 1;
-  while (users.some(u => u.login === candidate)) {
-    candidate = login + counter;
-    counter++;
-  }
+  let candidate = login, counter = 1;
+  while (users.some(u => u.login === candidate)) { candidate = login + counter; counter++; }
   return candidate;
 }
 
@@ -603,10 +577,7 @@ function registerWorker() {
   const dept = document.getElementById('regDept').value.trim();
   const instructor = document.getElementById('regInstructor').value.trim();
 
-  if (!fio || !position) {
-    alert('Пожалуйста, заполните ФИО и должность');
-    return;
-  }
+  if (!fio || !position) { alert('Пожалуйста, заполните ФИО и должность'); return; }
 
   const users = getUsers();
   const existing = users.find(u => u.role === 'user' && u.fio.toLowerCase() === fio.toLowerCase());
@@ -615,13 +586,11 @@ function registerWorker() {
   } else {
     const login = generateLogin(fio);
     const pass = generatePassword();
-    const newUser = {
-      login, pass, fio, role: 'user',
-      position, dept: dept || '—', instructor: instructor || ''
-    };
+    const newUser = { login, pass, fio, role: 'user', position, dept: dept || '—', instructor: instructor || '' };
     users.push(newUser);
     saveUsers(users);
     currentUser = newUser;
+    alert(`✅ Создан новый пользователь:\nЛогин: ${login}\nПароль: ${pass}\n\nСохраните эти данные!`);
   }
 
   localStorage.setItem('pb_currentUser', JSON.stringify(currentUser));
@@ -645,14 +614,10 @@ document.getElementById('loginUser').addEventListener('keydown', e => { if (e.ke
 function login() {
   const loginVal = document.getElementById('loginUser').value.trim();
   const pass = document.getElementById('loginPass').value;
-  const users = getUsers();
-  const u = users.find(x => x.login === loginVal && x.pass === pass);
+  const u = getUsers().find(x => x.login === loginVal && x.pass === pass);
 
   if (!u) { alert('❌ Неверный логин или пароль'); return; }
-  if (u.role !== 'admin') {
-    alert('⛔ Этот вход только для администратора.');
-    return;
-  }
+  if (u.role !== 'admin') { alert('⛔ Этот вход только для администратора.'); return; }
   currentUser = u;
   localStorage.setItem('pb_currentUser', JSON.stringify(u));
   showMainScreen();
@@ -721,7 +686,6 @@ function submitChangePassword() {
   const newPass = document.getElementById('cpNew').value;
   const newPass2 = document.getElementById('cpNew2').value;
   const errEl = document.getElementById('cpError');
-
   const showErr = (msg) => { errEl.textContent = msg; errEl.style.display = 'block'; };
 
   if (!oldPass || !newPass || !newPass2) return showErr('Заполните все поля');
@@ -923,7 +887,6 @@ let currentIndex = 0;
 let userAnswers = [];
 let timerInterval = null;
 let timeLeft = TEST_TIME;
-let startTime = null;
 
 document.querySelectorAll('.mode-card').forEach(card => {
   card.addEventListener('click', () => {
@@ -977,7 +940,6 @@ document.getElementById('startBtn').addEventListener('click', () => {
   userAnswers = questions.map(() => []);
   currentIndex = 0;
   timeLeft = TEST_TIME;
-  startTime = new Date();
 
   showScreen('testScreen');
   renderQuestion();
@@ -1060,12 +1022,7 @@ function saveJournal(items) { localStorage.setItem('pb_journal', JSON.stringify(
 
 /* ====================== ОТПРАВКА НА JSONBIN.IO ====================== */
 async function sendToServer(data) {
-  if (!JSONBIN_MASTER_KEY || JSONBIN_MASTER_KEY.startsWith('ВСТАВЬТЕ')) {
-    console.warn('⚠️ JSONBin Master Key не задан — данные не отправлены на сервер');
-    return { ok: false, reason: 'no-key' };
-  }
   try {
-    // 1. Читаем текущее содержимое бина
     const readResp = await fetch(`${JSONBIN_API}/latest`, {
       method: 'GET',
       headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
@@ -1073,14 +1030,11 @@ async function sendToServer(data) {
     if (!readResp.ok) throw new Error('HTTP ' + readResp.status);
     const readJson = await readResp.json();
 
-    // Структура бина: { journal: [...] }
     let serverJournal = readJson?.record?.journal;
     if (!Array.isArray(serverJournal)) serverJournal = [];
 
-    // 2. Добавляем новую запись
     serverJournal.push(data);
 
-    // 3. Записываем обратно
     const writeResp = await fetch(JSONBIN_API, {
       method: 'PUT',
       headers: {
@@ -1100,7 +1054,6 @@ async function sendToServer(data) {
 }
 
 async function saveResult(data) {
-  // локально
   const journal = getJournal();
   journal.push(data);
   saveJournal(journal);
@@ -1109,11 +1062,7 @@ async function saveResult(data) {
     try { await idbAdd(data); } catch(e) { console.warn('IndexedDB:', e); }
   }
 
-  // на сервер
-  const res = await sendToServer(data);
-  if (!res.ok && res.reason !== 'no-key') {
-    console.warn('Результат сохранён только локально.');
-  }
+  await sendToServer(data);
 }
 
 async function syncJournalFromIDB() {
@@ -1128,8 +1077,7 @@ async function syncJournalFromIDB() {
 
     if (missing.length > 0) {
       const cleaned = missing.map(({ uniqueKey, id, ...rest }) => rest);
-      const merged = localItems.concat(cleaned);
-      saveJournal(merged);
+      saveJournal(localItems.concat(cleaned));
       console.log(`💾 Восстановлено из IndexedDB: ${missing.length} записей`);
     }
   } catch(e) {
@@ -1137,12 +1085,8 @@ async function syncJournalFromIDB() {
   }
 }
 
-/* ====================== ЗАГРУЗКА С СЕРВЕРА (для админа) ====================== */
+/* ====================== ЗАГРУЗКА С СЕРВЕРА ====================== */
 async function loadJournalFromServer() {
-  if (!JSONBIN_MASTER_KEY || JSONBIN_MASTER_KEY.startsWith('ВСТАВЬТЕ')) {
-    alert('❌ Не задан X-Master-Key для JSONBin.io. Вставьте его в коде.');
-    return;
-  }
   const statusEl = document.getElementById('storageStatus');
   const infoEl = document.getElementById('storageInfo');
   statusEl.className = 'storage-status info';
@@ -1160,7 +1104,6 @@ async function loadJournalFromServer() {
     let serverJournal = json?.record?.journal;
     if (!Array.isArray(serverJournal)) serverJournal = [];
 
-    // Объединяем с локальным (без дублей)
     const localItems = getJournal();
     const keys = new Set(localItems.map(makeRecordKey));
     let added = 0;
@@ -1551,16 +1494,7 @@ async function importJournalJSON(event) {
         return;
       }
 
-      const merged = current.concat(newItems);
-      saveJournal(merged);
-
-      if (isIDBAvailable()) {
-        try {
-          const result = await idbAddMany(newItems);
-          console.log(`IndexedDB: добавлено ${result.added}, пропущено ${result.skipped}`);
-        } catch(err) { console.warn('IndexedDB:', err); }
-      }
-
+      saveJournal(current.concat(newItems));
       renderJournal();
       renderStats();
       updateStorageStatus();
@@ -1568,8 +1502,7 @@ async function importJournalJSON(event) {
       alert(
         `✅ Импорт завершён!\n\n` +
         `Добавлено новых записей: ${newItems.length}\n` +
-        `Пропущено дубликатов: ${duplicates}\n` +
-        `Всего в журнале теперь: ${merged.length}`
+        `Пропущено дубликатов: ${duplicates}`
       );
     } catch (err) {
       alert('❌ Ошибка чтения файла: ' + err.message);
