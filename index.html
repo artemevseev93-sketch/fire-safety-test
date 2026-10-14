@@ -37,7 +37,7 @@
   .screen { padding: 30px; display: none; }
   .screen.active { display: block; }
 
-  .login-box { max-width: 400px; margin: 40px auto; }
+  .login-box { max-width: 440px; margin: 30px auto; }
   .login-box h2 { text-align: center; color: #b71c1c; margin-bottom: 25px; }
 
   .form-group { margin-bottom: 15px; }
@@ -211,20 +211,62 @@
     </div>
   </header>
 
-  <!-- ЭКРАН ЛОГИНА -->
+  <!-- ЭКРАН ВХОДА ДЛЯ РАБОТНИКА (создание пользователя) -->
   <div id="loginScreen" class="screen active">
     <div class="login-box">
-      <h2>🔐 Вход в систему</h2>
+      <h2>👤 Регистрация работника</h2>
+      <p style="text-align:center; color:#666; font-size:.9em; margin-bottom:20px;">
+        Заполните данные, чтобы приступить к проверке знаний
+      </p>
+      <div class="form-group">
+        <label>ФИО работника *</label>
+        <input type="text" id="regFio" placeholder="Иванов Иван Иванович" required>
+      </div>
+      <div class="form-group">
+        <label>Должность *</label>
+        <input type="text" id="regPosition" placeholder="Слесарь-ремонтник" required>
+      </div>
+      <div class="form-group">
+        <label>Подразделение</label>
+        <input type="text" id="regDept" placeholder="Цех №1">
+      </div>
+      <div class="form-group">
+        <label>ФИО инструктирующего</label>
+        <input type="text" id="regInstructor" placeholder="Петров П.П.">
+      </div>
+      <div style="text-align:center; margin-top:25px;">
+        <button class="btn" id="registerBtn" style="width:100%;">Приступить к тестированию</button>
+      </div>
+      <p style="text-align:center; margin-top:15px; color:#888; font-size:.8em;">
+        Логин и пароль будут созданы автоматически
+      </p>
+      <div style="text-align:center; margin-top:10px;">
+        <button class="btn btn-secondary" id="adminLoginLink" style="font-size:.85em; padding:8px 18px;">
+          Вход для администратора
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ЭКРАН ВХОДА ДЛЯ АДМИНА -->
+  <div id="adminLoginScreen" class="screen">
+    <div class="login-box" style="max-width:400px;">
+      <h2>🔐 Вход администратора</h2>
       <div class="form-group">
         <label>Логин</label>
-        <input type="text" id="loginUser" placeholder="Введите логин" autocomplete="username">
+        <input type="text" id="loginUser" placeholder="admin" autocomplete="username">
       </div>
       <div class="form-group">
         <label>Пароль</label>
-        <input type="password" id="loginPass" placeholder="Введите пароль" autocomplete="current-password">
+        <input type="password" id="loginPass" placeholder="Пароль" autocomplete="current-password">
       </div>
       <div style="text-align:center; margin-top:25px;">
         <button class="btn" id="loginBtn" style="width:100%;">Войти</button>
+      </div>
+      <div style="text-align:center; margin-top:15px;">
+        <button class="btn btn-secondary" id="backToRegisterLink" style="font-size:.85em; padding:8px 18px;">
+          ← Назад к регистрации
+        </button>
       </div>
     </div>
   </div>
@@ -495,8 +537,7 @@ function isIDBAvailable() {
 
 /* ====================== ПОЛЬЗОВАТЕЛИ ====================== */
 const DEFAULT_USERS = [
-  { login: 'admin', pass: 'admin123', fio: 'Администратор системы', role: 'admin' },
-  { login: 'user',  pass: 'user123',  fio: 'Иванов Иван Иванович',  role: 'user'  }
+  { login: 'admin', pass: 'admin123', fio: 'Администратор системы', role: 'admin' }
 ];
 
 function getUsers() {
@@ -511,22 +552,120 @@ function saveUsers(users) { localStorage.setItem('pb_users', JSON.stringify(user
 
 let currentUser = null;
 
-/* ====================== АВТОРИЗАЦИЯ ====================== */
+/* ====================== ГЕНЕРАЦИЯ ЛОГИНА ====================== */
+function generateLogin(fio) {
+  const users = getUsers();
+  const parts = fio.toLowerCase().replace(/[^a-zа-яё\s]/g, '').split(/\s+/).filter(Boolean);
+  let base = parts.length >= 2
+    ? (parts[0].slice(0, 1) + parts[1]).replace(/[^a-zа-яё0-9]/g, '')
+    : (parts[0] || 'user').replace(/[^a-zа-яё0-9]/g, '');
+  if (!base) base = 'user';
+
+  // Транслитерация (упрощённая)
+  const translitMap = {
+    'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z','и':'i','й':'y',
+    'к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f',
+    'х':'h','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'
+  };
+  let login = base.split('').map(ch => translitMap[ch] || ch).join('');
+
+  let candidate = login;
+  let counter = 1;
+  while (users.some(u => u.login === candidate)) {
+    candidate = login + counter;
+    counter++;
+  }
+  return candidate;
+}
+
+function generatePassword() {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  let pass = '';
+  for (let i = 0; i < 8; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+  return pass;
+}
+
+/* ====================== РЕГИСТРАЦИЯ РАБОТНИКА ====================== */
+document.getElementById('registerBtn').addEventListener('click', registerWorker);
+document.getElementById('regInstructor').addEventListener('keydown', e => { if (e.key === 'Enter') registerWorker(); });
+
+function registerWorker() {
+  const fio = document.getElementById('regFio').value.trim();
+  const position = document.getElementById('regPosition').value.trim();
+  const dept = document.getElementById('regDept').value.trim();
+  const instructor = document.getElementById('regInstructor').value.trim();
+
+  if (!fio || !position) {
+    alert('Пожалуйста, заполните ФИО и должность');
+    return;
+  }
+
+  const users = getUsers();
+  // Проверяем, нет ли уже такого работника (по ФИО)
+  const existing = users.find(u => u.role === 'user' && u.fio.toLowerCase() === fio.toLowerCase());
+  if (existing) {
+    currentUser = existing;
+  } else {
+    const login = generateLogin(fio);
+    const pass = generatePassword();
+    const newUser = {
+      login,
+      pass,
+      fio,
+      role: 'user',
+      position,
+      dept: dept || '—',
+      instructor: instructor || ''
+    };
+    users.push(newUser);
+    saveUsers(users);
+    currentUser = newUser;
+  }
+
+  localStorage.setItem('pb_currentUser', JSON.stringify(currentUser));
+
+  // Заполняем стартовый экран
+  document.getElementById('fio').value = currentUser.fio || fio;
+  document.getElementById('position').value = currentUser.position || position;
+  document.getElementById('dept').value = currentUser.dept || dept;
+  document.getElementById('instructor').value = currentUser.instructor || instructor;
+
+  document.getElementById('userBadge').style.display = 'flex';
+  document.getElementById('userBadgeText').textContent = `${currentUser.fio} (работник)`;
+
+  showScreen('startScreen');
+}
+
+/* ====================== АВТОРИЗАЦИЯ АДМИНА ====================== */
 document.getElementById('loginBtn').addEventListener('click', login);
 document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
 document.getElementById('loginUser').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
 
 function login() {
-  const login = document.getElementById('loginUser').value.trim();
-  const pass  = document.getElementById('loginPass').value;
+  const loginVal = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value;
   const users = getUsers();
-  const u = users.find(x => x.login === login && x.pass === pass);
+  const u = users.find(x => x.login === loginVal && x.pass === pass);
 
   if (!u) { alert('❌ Неверный логин или пароль'); return; }
+  if (u.role !== 'admin') {
+    alert('⛔ Этот вход только для администратора. Работники регистрируются на главном экране.');
+    return;
+  }
   currentUser = u;
   localStorage.setItem('pb_currentUser', JSON.stringify(u));
   showMainScreen();
 }
+
+document.getElementById('adminLoginLink').addEventListener('click', () => {
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  showScreen('adminLoginScreen');
+});
+
+document.getElementById('backToRegisterLink').addEventListener('click', () => {
+  showScreen('loginScreen');
+});
 
 function logout() {
   if (!confirm('Выйти из системы?')) return;
@@ -535,6 +674,8 @@ function logout() {
   document.getElementById('userBadge').style.display = 'none';
   showScreen('loginScreen');
   document.getElementById('loginPass').value = '';
+  // Очищаем поля регистрации
+  ['regFio','regPosition','regDept','regInstructor'].forEach(id => document.getElementById(id).value = '');
 }
 
 function showMainScreen() {
@@ -547,6 +688,9 @@ function showMainScreen() {
     showScreen('adminScreen');
   } else {
     document.getElementById('fio').value = currentUser.fio || '';
+    document.getElementById('position').value = currentUser.position || '';
+    document.getElementById('dept').value = currentUser.dept || '';
+    document.getElementById('instructor').value = currentUser.instructor || '';
     showScreen('startScreen');
   }
 }
@@ -815,6 +959,21 @@ document.getElementById('startBtn').addEventListener('click', () => {
   const position = document.getElementById('position').value.trim();
   if (!fio || !position) { alert('Пожалуйста, заполните ФИО и должность'); return; }
 
+  // Обновляем данные пользователя, если он работник
+  if (currentUser && currentUser.role === 'user') {
+    const users = getUsers();
+    const idx = users.findIndex(u => u.login === currentUser.login);
+    if (idx !== -1) {
+      users[idx].fio = fio;
+      users[idx].position = position;
+      users[idx].dept = document.getElementById('dept').value.trim() || '—';
+      users[idx].instructor = document.getElementById('instructor').value.trim() || '';
+      saveUsers(users);
+      currentUser = users[idx];
+      localStorage.setItem('pb_currentUser', JSON.stringify(currentUser));
+    }
+  }
+
   questions = prepareQuestions(currentMode);
   userAnswers = questions.map(() => []);
   currentIndex = 0;
@@ -901,12 +1060,10 @@ function getJournal() {
 function saveJournal(items) { localStorage.setItem('pb_journal', JSON.stringify(items)); }
 
 async function saveResult(data) {
-  // 1. localStorage
   const journal = getJournal();
   journal.push(data);
   saveJournal(journal);
 
-  // 2. IndexedDB
   if (isIDBAvailable()) {
     try { await idbAdd(data); }
     catch(e) { console.warn('IndexedDB:', e); }
@@ -1305,7 +1462,6 @@ async function importJournalJSON(event) {
       const merged = current.concat(newItems);
       saveJournal(merged);
 
-      // В IndexedDB тоже
       if (isIDBAvailable()) {
         try {
           const result = await idbAddMany(newItems);
@@ -1334,23 +1490,23 @@ async function importJournalJSON(event) {
 
 /* ====================== АВТОЗАПУСК ====================== */
 (async function init() {
-  // Синхронизируем IDB и localStorage
   await syncJournalFromIDB();
 
-  // Автовход
   const saved = localStorage.getItem('pb_currentUser');
   if (saved) {
     try {
-      currentUser = JSON.parse(saved);
-      const fresh = getUsers().find(u => u.login === currentUser.login);
+      const parsed = JSON.parse(saved);
+      const fresh = getUsers().find(u => u.login === parsed.login);
       if (fresh) {
         currentUser = fresh;
         showMainScreen();
-      } else {
-        localStorage.removeItem('pb_currentUser');
+        return;
       }
-    } catch(e) { localStorage.removeItem('pb_currentUser'); }
+    } catch(e) { /* ignore */ }
+    localStorage.removeItem('pb_currentUser');
   }
+  // По умолчанию — экран регистрации работника
+  showScreen('loginScreen');
 })();
 </script>
 </body>
