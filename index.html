@@ -217,7 +217,6 @@
     </div>
   </header>
 
-  <!-- ЭКРАН ВХОДА ДЛЯ РАБОТНИКА -->
   <div id="loginScreen" class="screen active">
     <div class="login-box">
       <h2>👤 Регистрация работника</h2>
@@ -254,7 +253,6 @@
     </div>
   </div>
 
-  <!-- ЭКРАН ВХОДА ДЛЯ АДМИНА -->
   <div id="adminLoginScreen" class="screen">
     <div class="login-box" style="max-width:400px;">
       <h2>🔐 Вход администратора</h2>
@@ -277,7 +275,6 @@
     </div>
   </div>
 
-  <!-- СТАРТОВЫЙ ЭКРАН -->
   <div id="startScreen" class="screen">
     <div class="mode-select">
       <div class="mode-card selected" data-mode="intro">
@@ -311,11 +308,10 @@
       <button class="btn" id="startBtn">Начать тестирование</button>
     </div>
     <p style="text-align:center; margin-top:15px; color:#666; font-size:.85em;">
-      ⏱ 30 минут • Проходной балл 80% • Вопросы и ответы перемешиваются
+      ⏱ 30 минут • Проходной балл 80% • 20 случайных вопросов из банка
     </p>
   </div>
 
-  <!-- ЭКРАН ТЕСТА -->
   <div id="testScreen" class="screen">
     <div class="test-header">
       <div class="progress-info" id="progressInfo">Вопрос 1 из 20</div>
@@ -329,7 +325,6 @@
     </div>
   </div>
 
-  <!-- ЭКРАН РЕЗУЛЬТАТОВ -->
   <div id="resultScreen" class="screen">
     <div class="result-header" id="resultHeader"></div>
     <div class="protocol-info" id="protocolInfo"></div>
@@ -341,7 +336,6 @@
     </div>
   </div>
 
-  <!-- ПАНЕЛЬ АДМИНИСТРАТОРА -->
   <div id="adminScreen" class="screen">
     <div class="admin-tabs">
       <div class="admin-tab active" data-tab="journal">📊 Журнал результатов</div>
@@ -425,7 +419,6 @@
   </div>
 </div>
 
-<!-- МОДАЛЬНОЕ ОКНО: СМЕНА ПАРОЛЯ -->
 <div id="changePassModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:1000; align-items:center; justify-content:center; padding:20px;">
   <div style="background:#fff; border-radius:14px; max-width:420px; width:100%; padding:28px; box-shadow:0 20px 60px rgba(0,0,0,.4);">
     <h2 style="color:#b71c1c; margin-bottom:20px; text-align:center;">🔑 Смена пароля</h2>
@@ -453,12 +446,11 @@
 </div>
 
 <script>
-/* ====================== НАСТРОЙКИ JSONBIN.IO ====================== */
+/* ====================== НАСТРОЙКИ ====================== */
 const JSONBIN_BIN_ID = '6acf56feac6210605a305824';
 const JSONBIN_MASTER_KEY = '$2a$10$.l7.jFmxksStbOsG4kr.RecZ7xYlnU8qXJD53KHyvX6w.eMgqjYra';
 const JSONBIN_API = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
-/* ====================== НАСТРОЙКИ EMAILJS ====================== */
 const EMAILJS_PUBLIC_KEY  = '6Fx8TSQW_lu31cjFW';
 const EMAILJS_SERVICE_ID  = 'service_g7qugvs';
 const EMAILJS_TEMPLATE_ID = 'template_x7ynp45';
@@ -468,6 +460,9 @@ const LAST_SYNC_KEY  = 'pb_last_sync';
 const LAST_EMAIL_KEY = 'pb_last_email';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// 👇 Сколько вопросов в одном тесте
+const QUESTIONS_PER_TEST = 20;
+
 let emailjsReady = false;
 try {
   if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && !EMAILJS_PUBLIC_KEY.startsWith('ВСТАВЬТЕ')) {
@@ -475,7 +470,7 @@ try {
     emailjsReady = true;
     console.log('✅ EmailJS инициализирован');
   } else {
-    console.warn('⚠️ EmailJS не настроен — рассылка отключена');
+    console.warn('⚠️ EmailJS не настроен');
   }
 } catch(e) { console.warn('EmailJS init error:', e); }
 
@@ -564,7 +559,7 @@ function saveUsers(users) { localStorage.setItem('pb_users', JSON.stringify(user
 
 let currentUser = null;
 
-/* ====================== ГЕНЕРАЦИЯ ЛОГИНА/ПАРОЛЯ ====================== */
+/* ====================== ГЕНЕРАЦИЯ ====================== */
 function generateLogin(fio) {
   const users = getUsers();
   const parts = fio.toLowerCase().replace(/[^a-zа-яё\s]/g, '').split(/\s+/).filter(Boolean);
@@ -591,7 +586,7 @@ function generatePassword() {
   return pass;
 }
 
-/* ====================== РЕГИСТРАЦИЯ РАБОТНИКА ====================== */
+/* ====================== РЕГИСТРАЦИЯ ====================== */
 document.getElementById('registerBtn').addEventListener('click', registerWorker);
 document.getElementById('regInstructor').addEventListener('keydown', e => { if (e.key === 'Enter') registerWorker(); });
 
@@ -630,7 +625,7 @@ function registerWorker() {
   showScreen('startScreen');
 }
 
-/* ====================== АВТОРИЗАЦИЯ АДМИНА ====================== */
+/* ====================== АВТОРИЗАЦИЯ ====================== */
 document.getElementById('loginBtn').addEventListener('click', login);
 document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
 document.getElementById('loginUser').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
@@ -820,7 +815,49 @@ const QUESTIONS = {
     { q: "Какой документ оформляется при проведении противопожарного инструктажа?",
       a: ["Журнал учёта инструктажей по пожарной безопасности",
           "Акт выполненных работ", "Справка о доходах", "Табель учёта рабочего времени"],
-      correct: [0], explain: "Факт проведения инструктажа фиксируется в журнале." }
+      correct: [0], explain: "Факт проведения инструктажа фиксируется в журнале." },
+
+    /* ============ НОВЫЕ ВОПРОСЫ (добавлены) ============ */
+    { q: "Какой телефонный номер используется для вызова пожарной охраны с мобильного телефона в России?",
+      a: ["101", "102", "103", "104"],
+      correct: [0], explain: "Пожарная охрана — 101. Единый номер спасения — 112." },
+    { q: "Что необходимо сделать в первую очередь при обнаружении пожара?",
+      a: ["Начать тушить огонь самостоятельно",
+          "Сообщить в пожарную охрану и оповестить людей",
+          "Собрать документы и ценные вещи",
+          "Открыть все окна для проветривания"],
+      correct: [1], explain: "Сначала — вызов пожарной охраны (101/112) и оповещение людей." },
+    { q: "Каким огнетушителем нельзя тушить электрооборудование, находящееся под напряжением?",
+      a: ["Углекислотным", "Порошковым", "Водным", "Хладоновым"],
+      correct: [2], explain: "Вода проводит электрический ток — это опасно для жизни." },
+    { q: "Что относится к первичным средствам пожаротушения?",
+      a: ["Пожарный автомобиль", "Огнетушитель", "Пожарный гидрант", "Автоматическая пожарная сигнализация"],
+      correct: [1], explain: "Огнетушитель — первичное средство. Автомобиль — техника, гидрант — водоснабжение." },
+    { q: "Как часто проводится повторный противопожарный инструктаж с работниками?",
+      a: ["Не реже 1 раза в год", "Не реже 1 раза в полгода",
+          "Не реже 1 раза в квартал", "Не реже 1 раза в месяц"],
+      correct: [1], explain: "Повторный инструктаж — не реже одного раза в полгода." },
+    { q: "Что запрещается делать при пожаре в здании?",
+      a: ["Пользоваться лифтом", "Закрывать за собой двери",
+          "Двигаться вдоль стен", "Дышать через влажную ткань"],
+      correct: [0], explain: "Лифт при пожаре — ловушка, пользоваться им категорически запрещено." },
+    { q: "Какой знак обозначает «Огнетушитель»?",
+      a: ["Красный квадрат с белым огнетушителем",
+          "Зелёный круг с белым огнетушителем",
+          "Синий треугольник с белым огнетушителем",
+          "Жёлтый ромб с чёрным огнетушителем"],
+      correct: [0], explain: "Знак «Огнетушитель» — красный квадрат с белым символом." },
+    { q: "На каком расстоянии от источника огня следует направлять струю огнетушителя?",
+      a: ["0,5–1 м", "1–2 м", "3–4 м", "5–6 м"],
+      correct: [2], explain: "Оптимальное расстояние — 3–4 метра (зависит от типа огнетушителя)." },
+    { q: "Что необходимо сделать перед использованием порошкового огнетушителя?",
+      a: ["Перевернуть его", "Встряхнуть его", "Нажать на рычаг",
+          "Снять пломбу и выдернуть чеку"],
+      correct: [3], explain: "Порядок: сорвать пломбу → выдернуть чеку → направить → нажать." },
+    { q: "Какие действия запрещены при эвакуации из горящего помещения?",
+      a: ["Двигаться к выходу", "Возвращаться за забытыми вещами",
+          "Пригибаться к полу", "Закрывать нос и рот тканью"],
+      correct: [1], explain: "Возвращаться за вещами при пожаре категорически запрещено." }
   ],
   primary: [
     { q: "Когда проводится первичный противопожарный инструктаж на рабочем месте?",
@@ -930,8 +967,13 @@ function shuffle(arr) {
   return a;
 }
 
+/* 👇 Новая логика: берём случайные 20 из всего банка */
 function prepareQuestions(mode) {
-  return shuffle(QUESTIONS[mode]).map(q => {
+  const bank = QUESTIONS[mode];
+  const sampleSize = Math.min(QUESTIONS_PER_TEST, bank.length);
+  const selected = shuffle(bank).slice(0, sampleSize);
+
+  return selected.map(q => {
     const indexed = q.a.map((text, i) => ({ text, originalIndex: i }));
     const shuffled = shuffle(indexed);
     return {
@@ -965,6 +1007,8 @@ document.getElementById('startBtn').addEventListener('click', () => {
   userAnswers = questions.map(() => []);
   currentIndex = 0;
   timeLeft = TEST_TIME;
+
+  console.log(`📝 Тест: ${questions.length} случайных вопросов из банка ${QUESTIONS[currentMode].length}`);
 
   showScreen('testScreen');
   renderQuestion();
@@ -1045,7 +1089,7 @@ function getJournal() {
 }
 function saveJournal(items) { localStorage.setItem('pb_journal', JSON.stringify(items)); }
 
-/* ====================== ОТПРАВКА НА JSONBIN.IO ====================== */
+/* ====================== ОТПРАВКА НА JSONBIN ====================== */
 async function sendToServer(data) {
   try {
     const readResp = await fetch(`${JSONBIN_API}/latest`, {
@@ -1165,8 +1209,7 @@ async function loadJournalFromServer(silent) {
 /* ====================== ОТПРАВКА ОТЧЁТА НА ПОЧТУ ====================== */
 async function sendEmailReport(manual) {
   if (!emailjsReady) {
-    if (manual) alert('⚠️ EmailJS не настроен.\nВпишите ключи в начале скрипта.');
-    console.warn('EmailJS не настроен — письмо не отправлено');
+    if (manual) alert('⚠️ EmailJS не настроен.');
     return false;
   }
 
@@ -1210,7 +1253,7 @@ async function sendEmailReport(manual) {
   }
 }
 
-/* ====================== АВТО-СИНХРОНИЗАЦИЯ И РАССЫЛКА ====================== */
+/* ====================== АВТО-СИНХРОНИЗАЦИЯ ====================== */
 async function autoSyncAndMail() {
   if (!currentUser || currentUser.role !== 'admin') return;
 
@@ -1219,23 +1262,17 @@ async function autoSyncAndMail() {
   const lastEmail = parseInt(localStorage.getItem(LAST_EMAIL_KEY) || '0');
 
   if (now - lastSync > DAY_MS) {
-    console.log('🔄 Авто-синхронизация: прошло более 24 часов');
+    console.log('🔄 Авто-синхронизация...');
     const res = await loadJournalFromServer(true);
     if (res.ok) {
       localStorage.setItem(LAST_SYNC_KEY, now.toString());
       console.log('✅ Авто-синхронизация завершена');
     }
-  } else {
-    const hoursLeft = Math.round((DAY_MS - (now - lastSync)) / 3600000);
-    console.log(`⏳ Следующая авто-синхронизация через ~${hoursLeft} ч.`);
   }
 
   if (emailjsReady && now - lastEmail > DAY_MS) {
-    console.log('📧 Авто-рассылка: прошло более 24 часов');
+    console.log('📧 Авто-рассылка...');
     await sendEmailReport(false);
-  } else if (emailjsReady) {
-    const hoursLeft = Math.round((DAY_MS - (now - lastEmail)) / 3600000);
-    console.log(`⏳ Следующее письмо через ~${hoursLeft} ч.`);
   }
 }
 
@@ -1355,7 +1392,7 @@ async function updateStorageStatus() {
   if (!isIDBAvailable()) {
     el.className = 'storage-status error';
     el.style.display = 'block';
-    info.textContent = 'IndexedDB недоступен — данные хранятся только в localStorage';
+    info.textContent = 'IndexedDB недоступен';
     return;
   }
 
@@ -1450,7 +1487,7 @@ async function clearJournal() {
   alert('✅ Локальный журнал очищен');
 }
 
-/* ====================== ПОЛЬЗОВАТЕЛИ (админ) ====================== */
+/* ====================== ПОЛЬЗОВАТЕЛИ ====================== */
 function renderUsers() {
   const users = getUsers();
   document.getElementById('usersBody').innerHTML = users.map(u => `
