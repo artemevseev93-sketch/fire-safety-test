@@ -460,7 +460,6 @@ const LAST_SYNC_KEY  = 'pb_last_sync';
 const LAST_EMAIL_KEY = 'pb_last_email';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-// 👇 Сколько вопросов в одном тесте
 const QUESTIONS_PER_TEST = 20;
 
 let emailjsReady = false;
@@ -817,7 +816,6 @@ const QUESTIONS = {
           "Акт выполненных работ", "Справка о доходах", "Табель учёта рабочего времени"],
       correct: [0], explain: "Факт проведения инструктажа фиксируется в журнале." },
 
-    /* ============ НОВЫЕ ВОПРОСЫ (добавлены) ============ */
     { q: "Какой телефонный номер используется для вызова пожарной охраны с мобильного телефона в России?",
       a: ["101", "102", "103", "104"],
       correct: [0], explain: "Пожарная охрана — 101. Единый номер спасения — 112." },
@@ -967,7 +965,6 @@ function shuffle(arr) {
   return a;
 }
 
-/* 👇 Новая логика: берём случайные 20 из всего банка */
 function prepareQuestions(mode) {
   const bank = QUESTIONS[mode];
   const sampleSize = Math.min(QUESTIONS_PER_TEST, bank.length);
@@ -1206,7 +1203,43 @@ async function loadJournalFromServer(silent) {
   }
 }
 
-/* ====================== ОТПРАВКА ОТЧЁТА НА ПОЧТУ ====================== */
+/* ============================================================
+   📧 ФОРМИРОВАНИЕ ТЕКСТА ПИСЬМА С ДЕТАЛИЗАЦИЕЙ
+   ============================================================ */
+function formatAttemptDetails(attempt, index) {
+  const lines = [];
+  lines.push(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+  lines.push(`📋 Попытка №${index + 1}`);
+  lines.push(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+  lines.push(`ФИО: ${attempt.fio}`);
+  lines.push(`Должность: ${attempt.position}`);
+  lines.push(`Подразделение: ${attempt.dept}`);
+  lines.push(`Вид инструктажа: ${attempt.modeName}`);
+  lines.push(`Инструктирующий: ${attempt.instructor}`);
+  lines.push(`Дата: ${attempt.dateStr}`);
+  lines.push(`Результат: ${attempt.passed ? '✅ ЗАЧЁТ' : '❌ НЕЗАЧЁТ'} (${attempt.correct}/${attempt.total} = ${attempt.percent}%)`);
+  lines.push(`Затрачено времени: ~${attempt.duration} мин.`);
+  lines.push('');
+
+  if (Array.isArray(attempt.questionsDetail) && attempt.questionsDetail.length > 0) {
+    lines.push('ОТВЕТЫ НА ВОПРОСЫ:');
+    attempt.questionsDetail.forEach((d, i) => {
+      lines.push(`${i + 1}. ${d.question}`);
+      lines.push(`   Ответ работника: ${d.userAnswer || '(нет ответа)'} ${d.isCorrect ? '✅' : '❌'}`);
+      if (!d.isCorrect) {
+        lines.push(`   Правильно: ${d.correctAnswer}`);
+      }
+      lines.push('');
+    });
+  } else {
+    lines.push('(детализация ответов недоступна для этой попытки)');
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
+/* ====================== ОТПРАВКА ОТЧЁТА ====================== */
 async function sendEmailReport(manual) {
   if (!emailjsReady) {
     if (manual) alert('⚠️ EmailJS не настроен.');
@@ -1219,32 +1252,65 @@ async function sendEmailReport(manual) {
     return false;
   }
 
-  const total = journal.length;
-  const passed = journal.filter(x => x.passed).length;
+  // Отбираем попытки, которые ещё не отправлялись
+  const lastEmailTs = parseInt(localStorage.getItem(LAST_EMAIL_KEY) || '0');
+  const newAttempts = journal.filter(it => {
+    const ts = new Date(it.date).getTime();
+    return ts > lastEmailTs;
+  });
+
+  if (newAttempts.length === 0) {
+    if (manual) {
+      alert('Нет новых попыток с момента последней рассылки.\nПисьмо не отправлено.');
+    }
+    console.log('📭 Нет новых попыток — письмо не отправлено');
+    return false;
+  }
+
+  // Статистика по новым попыткам
+  const total = newAttempts.length;
+  const passed = newAttempts.filter(x => x.passed).length;
   const failed = total - passed;
   const percent = Math.round(passed / total * 100);
   const now = new Date();
 
-  const detailsArr = journal.slice(-100).map(it =>
-    `${it.dateStr} | ${it.fio} | ${it.position} | ${it.modeName} | ${it.passed ? 'Зачёт' : 'Незачёт'} (${it.percent}%)`
-  );
-  const details = detailsArr.join('\n');
+  // Период
+  const firstTs = newAttempts.reduce((min, it) => Math.min(min, new Date(it.date).getTime()), Infinity);
+  const lastTs  = newAttempts.reduce((max, it) => Math.max(max, new Date(it.date).getTime()), 0);
+  const periodStr = lastEmailTs > 0
+    ? `${new Date(lastEmailTs).toLocaleString('ru-RU')} — ${new Date(lastTs).toLocaleString('ru-RU')}`
+    : `с ${new Date(firstTs).toLocaleString('ru-RU')} по ${new Date(lastTs).toLocaleString('ru-RU')}`;
+
+  // Формируем детализацию
+  const details = newAttempts
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .map((att, i) => formatAttemptDetails(att, i))
+    .join('\n\n');
+
+  // Ограничение EmailJS — около 50 000 символов
+  const MAX_LEN = 45000;
+  let detailsTrimmed = details;
+  if (details.length > MAX_LEN) {
+    detailsTrimmed = details.slice(0, MAX_LEN) + '\n\n...(отчёт обрезан из-за размера)';
+  }
 
   const params = {
     to_email: ADMIN_EMAIL,
     date: now.toLocaleString('ru-RU'),
+    period: periodStr,
     total: total,
     passed: passed,
     failed: failed,
     percent: percent,
-    details: details
+    details: detailsTrimmed
   };
 
   try {
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
+    // Обновляем метку ТОЛЬКО после успешной отправки
     localStorage.setItem(LAST_EMAIL_KEY, Date.now().toString());
-    console.log('✅ Письмо отправлено на', ADMIN_EMAIL);
-    if (manual) alert('✅ Отчёт отправлен на ' + ADMIN_EMAIL);
+    console.log(`✅ Письмо отправлено на ${ADMIN_EMAIL} (${total} новых попыток)`);
+    if (manual) alert(`✅ Отчёт отправлен на ${ADMIN_EMAIL}\nНовых попыток в письме: ${total}`);
     return true;
   } catch(e) {
     console.error('❌ Ошибка отправки письма:', e);
@@ -1261,6 +1327,7 @@ async function autoSyncAndMail() {
   const lastSync  = parseInt(localStorage.getItem(LAST_SYNC_KEY)  || '0');
   const lastEmail = parseInt(localStorage.getItem(LAST_EMAIL_KEY) || '0');
 
+  // Синхронизация раз в сутки
   if (now - lastSync > DAY_MS) {
     console.log('🔄 Авто-синхронизация...');
     const res = await loadJournalFromServer(true);
@@ -1270,9 +1337,19 @@ async function autoSyncAndMail() {
     }
   }
 
+  // Рассылка раз в сутки, ТОЛЬКО если есть новые попытки
   if (emailjsReady && now - lastEmail > DAY_MS) {
-    console.log('📧 Авто-рассылка...');
-    await sendEmailReport(false);
+    console.log('📧 Проверка новых попыток для рассылки...');
+    const journal = getJournal();
+    const hasNew = journal.some(it => new Date(it.date).getTime() > lastEmail);
+    if (hasNew) {
+      console.log('📬 Есть новые попытки — отправляем письмо');
+      await sendEmailReport(false);
+    } else {
+      console.log('📭 Новых попыток нет — письмо не отправляем');
+      // Обновляем метку, чтобы не проверять каждые 5 минут
+      localStorage.setItem(LAST_EMAIL_KEY, now.toString());
+    }
   }
 }
 
@@ -1280,11 +1357,32 @@ async function autoSyncAndMail() {
 async function finishTest(timeout) {
   clearInterval(timerInterval);
 
+  // Считаем правильные + собираем детализацию
   let correctCount = 0;
+  const questionsDetail = [];
+
   questions.forEach((q, i) => {
     const ua = [...userAnswers[i]].sort().join(',');
     const ca = [...q.correctShuffled].sort().join(',');
-    if (ua === ca) correctCount++;
+    const isCorrect = ua === ca;
+    if (isCorrect) correctCount++;
+
+    // Текст ответа работника
+    const userAnswerText = userAnswers[i].length === 0
+      ? '(нет ответа)'
+      : userAnswers[i].map(idx => q.shuffledAnswers[idx]?.text || '?').join('; ');
+
+    // Текст правильного ответа
+    const correctAnswerText = q.correctShuffled
+      .map(idx => q.shuffledAnswers[idx]?.text || '?')
+      .join('; ');
+
+    questionsDetail.push({
+      question: q.q,
+      userAnswer: userAnswerText,
+      correctAnswer: correctAnswerText,
+      isCorrect
+    });
   });
 
   const total = questions.length;
@@ -1309,7 +1407,8 @@ async function finishTest(timeout) {
     percent,
     passed,
     duration,
-    operator: currentUser ? currentUser.login : '—'
+    operator: currentUser ? currentUser.login : '—',
+    questionsDetail  // 👈 Сохраняем детализацию
   });
 
   document.getElementById('resultHeader').innerHTML = `
@@ -1399,12 +1498,12 @@ async function updateStorageStatus() {
   try {
     const items = await idbGetAll();
     const lastSync = localStorage.getItem(LAST_SYNC_KEY);
-    const lastSyncStr = lastSync
-      ? new Date(parseInt(lastSync)).toLocaleString('ru-RU')
-      : 'никогда';
+    const lastEmail = localStorage.getItem(LAST_EMAIL_KEY);
+    const lastSyncStr = lastSync ? new Date(parseInt(lastSync)).toLocaleString('ru-RU') : 'никогда';
+    const lastEmailStr = lastEmail ? new Date(parseInt(lastEmail)).toLocaleString('ru-RU') : 'никогда';
     el.className = 'storage-status';
     el.style.display = 'block';
-    info.textContent = `Локальных записей: ${items.length}. Последняя синхронизация: ${lastSyncStr}.`;
+    info.textContent = `Записей: ${items.length}. Синхр.: ${lastSyncStr}. Рассылка: ${lastEmailStr}.`;
   } catch(e) {
     el.className = 'storage-status warn';
     el.style.display = 'block';
