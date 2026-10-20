@@ -13,49 +13,22 @@
     background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
     min-height: 100vh; padding: 20px; color: #333;
   }
-  .container {
-    max-width: 1100px; margin: 0 auto; background: #fff;
-    border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.3);
-    overflow: hidden;
-  }
-  header {
-    background: linear-gradient(135deg, #d32f2f, #b71c1c);
-    color: #fff; padding: 25px 30px; text-align: center; position: relative;
-  }
+  .container { max-width: 1100px; margin: 0 auto; background: #fff; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.3); overflow: hidden; }
+  header { background: linear-gradient(135deg, #d32f2f, #b71c1c); color: #fff; padding: 25px 30px; text-align: center; position: relative; }
   header h1 { font-size: 1.6em; margin-bottom: 6px; }
   header p { opacity: .9; font-size: .95em; }
-  .user-badge {
-    position: absolute; top: 15px; right: 20px; background: rgba(255,255,255,.2);
-    padding: 8px 14px; border-radius: 20px; font-size: .85em; display: flex;
-    align-items: center; gap: 10px; flex-wrap: wrap;
-  }
-  .user-badge button {
-    background: #fff; color: #b71c1c; border: none; padding: 4px 10px;
-    border-radius: 12px; cursor: pointer; font-size: .85em; font-weight: 600;
-  }
+  .user-badge { position: absolute; top: 15px; right: 20px; background: rgba(255,255,255,.2); padding: 8px 14px; border-radius: 20px; font-size: .85em; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .user-badge button { background: #fff; color: #b71c1c; border: none; padding: 4px 10px; border-radius: 12px; cursor: pointer; font-size: .85em; font-weight: 600; }
   .user-badge button:hover { background: #ffeaea; }
-
   .screen { padding: 30px; display: none; }
   .screen.active { display: block; }
-
   .login-box { max-width: 440px; margin: 30px auto; }
   .login-box h2 { text-align: center; color: #b71c1c; margin-bottom: 25px; }
-
   .form-group { margin-bottom: 15px; }
   .form-group label { display: block; font-weight: 600; margin-bottom: 6px; font-size: .9em; }
-  .form-group input, .form-group select {
-    width: 100%; padding: 12px; border: 1px solid #ccc;
-    border-radius: 8px; font-size: 1em;
-  }
-  .form-group input:focus, .form-group select:focus {
-    outline: none; border-color: #d32f2f; box-shadow: 0 0 0 3px rgba(211,47,47,.1);
-  }
-
-  .btn {
-    background: linear-gradient(135deg, #d32f2f, #b71c1c);
-    color: #fff; border: none; padding: 14px 32px; border-radius: 8px;
-    font-size: 1em; font-weight: 600; cursor: pointer; transition: .2s;
-  }
+  .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1em; }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: #d32f2f; box-shadow: 0 0 0 3px rgba(211,47,47,.1); }
+  .btn { background: linear-gradient(135deg, #d32f2f, #b71c1c); color: #fff; border: none; padding: 14px 32px; border-radius: 8px; font-size: 1em; font-weight: 600; cursor: pointer; transition: .2s; }
   .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(211,47,47,.35); }
   .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
   .btn-secondary { background: #fff; color: #b71c1c; border: 2px solid #b71c1c; }
@@ -67,52 +40,29 @@
   .btn-info:hover { box-shadow: 0 8px 20px rgba(2,119,189,.35); }
   .btn-mail { background: linear-gradient(135deg, #6a1b9a, #4a148c); }
   .btn-mail:hover { box-shadow: 0 8px 20px rgba(106,27,154,.35); }
-
   .mode-select { display: flex; gap: 15px; margin: 20px 0; flex-wrap: wrap; }
-  .mode-card {
-    flex: 1; min-width: 250px; padding: 20px; border: 2px solid #ddd;
-    border-radius: 12px; cursor: pointer; transition: .25s; background: #fafafa;
-  }
+  .mode-card { flex: 1; min-width: 250px; padding: 20px; border: 2px solid #ddd; border-radius: 12px; cursor: pointer; transition: .25s; background: #fafafa; }
   .mode-card:hover { border-color: #d32f2f; transform: translateY(-3px); }
   .mode-card.selected { border-color: #d32f2f; background: #ffebee; box-shadow: 0 0 0 3px rgba(211,47,47,.15); }
   .mode-card h3 { color: #b71c1c; margin-bottom: 8px; }
   .mode-card p { font-size: .9em; color: #666; }
-
-  .test-header {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 15px 30px; background: #f5f5f5; border-bottom: 2px solid #eee;
-    position: sticky; top: 0; z-index: 10;
-  }
-  .timer {
-    font-size: 1.2em; font-weight: 700; color: #b71c1c;
-    background: #ffebee; padding: 8px 16px; border-radius: 8px;
-  }
+  .test-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: #f5f5f5; border-bottom: 2px solid #eee; position: sticky; top: 0; z-index: 10; }
+  .timer { font-size: 1.2em; font-weight: 700; color: #b71c1c; background: #ffebee; padding: 8px 16px; border-radius: 8px; }
   .timer.warning { background: #ffcdd2; animation: pulse 1s infinite; }
   @keyframes pulse { 50% { opacity: .6; } }
   .progress-info { font-weight: 600; color: #555; }
   .progress-bar { height: 6px; background: #eee; }
-  .progress-bar-fill {
-    height: 100%; background: linear-gradient(90deg, #d32f2f, #ff5722);
-    transition: width .3s; width: 0%;
-  }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #d32f2f, #ff5722); transition: width .3s; width: 0%; }
   .question { padding: 30px; }
   .question h3 { font-size: 1.15em; margin-bottom: 20px; line-height: 1.5; }
   .q-number { color: #d32f2f; font-weight: 700; }
   .answers { display: flex; flex-direction: column; gap: 12px; }
-  .answer {
-    display: flex; align-items: flex-start; gap: 12px;
-    padding: 14px 18px; border: 2px solid #ddd; border-radius: 10px;
-    cursor: pointer; transition: .2s; background: #fafafa;
-  }
+  .answer { display: flex; align-items: flex-start; gap: 12px; padding: 14px 18px; border: 2px solid #ddd; border-radius: 10px; cursor: pointer; transition: .2s; background: #fafafa; }
   .answer:hover { border-color: #d32f2f; background: #fff; }
   .answer input { margin-top: 3px; transform: scale(1.2); accent-color: #d32f2f; cursor: pointer; }
   .answer.selected { border-color: #d32f2f; background: #ffebee; }
   .answer label { cursor: pointer; flex: 1; line-height: 1.4; }
-  .nav-buttons {
-    display: flex; justify-content: space-between; gap: 10px;
-    padding: 20px 30px; border-top: 1px solid #eee; background: #fafafa;
-  }
-
+  .nav-buttons { display: flex; justify-content: space-between; gap: 10px; padding: 20px 30px; border-top: 1px solid #eee; background: #fafafa; }
   .result-header { text-align: center; padding: 30px; }
   .result-header .icon { font-size: 60px; margin-bottom: 10px; }
   .result-header h2 { font-size: 1.8em; margin-bottom: 10px; }
@@ -124,79 +74,58 @@
   .score-item .label { font-size: .85em; color: #666; margin-top: 5px; }
   .review { padding: 0 30px 30px; }
   .review h3 { margin-bottom: 15px; color: #b71c1c; }
-  .review-item {
-    padding: 15px; border-radius: 10px; margin-bottom: 12px;
-    border-left: 5px solid #ccc; background: #fafafa;
-  }
+  .review-item { padding: 15px; border-radius: 10px; margin-bottom: 12px; border-left: 5px solid #ccc; background: #fafafa; }
   .review-item.correct { border-left-color: #2e7d32; background: #e8f5e9; }
   .review-item.wrong { border-left-color: #c62828; background: #ffebee; }
   .review-item .q { font-weight: 600; margin-bottom: 8px; }
   .review-item .ans { font-size: .9em; margin: 4px 0; }
   .review-item .ans.correct-ans { color: #2e7d32; font-weight: 600; }
   .review-item .ans.wrong-ans { color: #c62828; text-decoration: line-through; }
-  .review-item .explain {
-    font-size: .85em; color: #555; margin-top: 8px;
-    padding-top: 8px; border-top: 1px dashed #ccc; font-style: italic;
-  }
-  .protocol-info {
-    background: #f5f5f5; padding: 20px; border-radius: 10px;
-    margin: 20px 30px; font-size: .9em; line-height: 1.6;
-  }
+  .review-item .explain { font-size: .85em; color: #555; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ccc; font-style: italic; }
+  .protocol-info { background: #f5f5f5; padding: 20px; border-radius: 10px; margin: 20px 30px; font-size: .9em; line-height: 1.6; }
   .protocol-info b { color: #b71c1c; }
   .actions { display: flex; gap: 10px; justify-content: center; padding: 20px 30px 30px; flex-wrap: wrap; }
-
   .admin-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; }
-  .admin-tab {
-    padding: 12px 20px; cursor: pointer; font-weight: 600;
-    border-bottom: 3px solid transparent; color: #666;
-  }
+  .admin-tab { padding: 12px 20px; cursor: pointer; font-weight: 600; border-bottom: 3px solid transparent; color: #666; }
   .admin-tab.active { color: #b71c1c; border-bottom-color: #b71c1c; }
-
   .admin-stats { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
-  .stat-card {
-    flex: 1; min-width: 150px; padding: 18px; border-radius: 10px;
-    background: linear-gradient(135deg, #f5f5f5, #eeeeee); text-align: center;
-  }
+  .stat-card { flex: 1; min-width: 150px; padding: 18px; border-radius: 10px; background: linear-gradient(135deg, #f5f5f5, #eeeeee); text-align: center; }
   .stat-card .value { font-size: 1.8em; font-weight: 700; color: #b71c1c; }
   .stat-card .label { font-size: .85em; color: #666; margin-top: 5px; }
-
-  .table-controls {
-    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;
-    align-items: center;
-  }
-  .table-controls input, .table-controls select {
-    padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: .95em;
-  }
+  .table-controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; align-items: center; }
+  .table-controls input, .table-controls select { padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: .95em; }
   .table-controls input { flex: 1; min-width: 200px; }
-
   table { width: 100%; border-collapse: collapse; font-size: .9em; }
   th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
   th { background: #f5f5f5; font-weight: 600; color: #b71c1c; position: sticky; top: 0; }
   tr:hover { background: #fafafa; }
-  .badge {
-    display: inline-block; padding: 3px 10px; border-radius: 12px;
-    font-size: .8em; font-weight: 600;
-  }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: .8em; font-weight: 600; }
   .badge.pass { background: #e8f5e9; color: #2e7d32; }
   .badge.fail { background: #ffebee; color: #c62828; }
   .table-wrap { max-height: 500px; overflow-y: auto; border-radius: 8px; border: 1px solid #eee; }
   .empty { text-align: center; padding: 40px; color: #999; }
-
   .export-buttons { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
-
-  .storage-status {
-    margin-bottom: 15px; padding: 10px 15px; border-radius: 8px;
-    font-size: .85em; background: #e8f5e9; color: #2e7d32; display: none;
-  }
+  .storage-status { margin-bottom: 15px; padding: 10px 15px; border-radius: 8px; font-size: .85em; background: #e8f5e9; color: #2e7d32; display: none; }
   .storage-status.error { background: #ffebee; color: #c62828; }
   .storage-status.warn { background: #fff3e0; color: #ef6c00; }
   .storage-status.info { background: #e3f2fd; color: #0277bd; }
-
+  
+  /* 👇 ИСПРАВЛЕНИЕ ДЛЯ ПЕЧАТИ */
   @media print {
     body { background: #fff; padding: 0; }
-    .container { box-shadow: none; }
-    .actions, .btn, .user-badge { display: none !important; }
-    .review-item { break-inside: avoid; }
+    .container { box-shadow: none; max-width: 100%; }
+    .actions, .btn, .user-badge, .admin-tabs, .admin-stats, .export-buttons, .table-controls, .test-header, .nav-buttons { display: none !important; }
+    .screen { padding: 0 !important; }
+    .result-header .icon { font-size: 24px; margin-bottom: 0; }
+    .result-header h2 { font-size: 20px; }
+    .score-box { margin: 10px 0; }
+    .score-item { padding: 10px; min-width: 90px; }
+    .score-item .value { font-size: 1.4em; }
+    .protocol-info { margin: 10px 0; padding: 10px; }
+    .review-item { break-inside: avoid; page-break-inside: avoid; margin-bottom: 8px; padding: 10px; }
+    .review { padding: 0; }
+    .review-item .q { font-size: 13px; }
+    .review-item .ans { font-size: 12px; }
   }
   @media (max-width: 600px) {
     .test-header { flex-direction: column; gap: 10px; }
@@ -1204,39 +1133,48 @@ async function loadJournalFromServer(silent) {
 }
 
 /* ============================================================
-   📧 ФОРМИРОВАНИЕ ТЕКСТА ПИСЬМА С ДЕТАЛИЗАЦИЕЙ
+   📧 ФОРМИРОВАНИЕ HTML-ТЕКСТА ПИСЬМА
    ============================================================ */
-function formatAttemptDetails(attempt, index) {
-  const lines = [];
-  lines.push(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-  lines.push(`📋 Попытка №${index + 1}`);
-  lines.push(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-  lines.push(`ФИО: ${attempt.fio}`);
-  lines.push(`Должность: ${attempt.position}`);
-  lines.push(`Подразделение: ${attempt.dept}`);
-  lines.push(`Вид инструктажа: ${attempt.modeName}`);
-  lines.push(`Инструктирующий: ${attempt.instructor}`);
-  lines.push(`Дата: ${attempt.dateStr}`);
-  lines.push(`Результат: ${attempt.passed ? '✅ ЗАЧЁТ' : '❌ НЕЗАЧЁТ'} (${attempt.correct}/${attempt.total} = ${attempt.percent}%)`);
-  lines.push(`Затрачено времени: ~${attempt.duration} мин.`);
-  lines.push('');
-
+function formatAttemptDetailsHTML(attempt, index) {
+  let html = `<div style="margin-bottom: 25px; padding: 15px; background: #fcfcfc; border: 1px solid #eee; border-radius: 8px;">`;
+  
+  // Заголовок попытки
+  const statusColor = attempt.passed ? '#2e7d32' : '#c62828';
+  const statusText = attempt.passed ? 'ЗАЧЁТ' : 'НЕЗАЧЁТ';
+  const statusIcon = attempt.passed ? '✅' : '❌';
+  
+  html += `<h3 style="margin-top: 0; color: ${statusColor}; border-bottom: 1px solid #eee; padding-bottom: 8px;">`;
+  html += `${statusIcon} Попытка №${index + 1}: ${attempt.fio} (${statusText})</h3>`;
+  
+  html += `<p style="margin: 5px 0;"><b>Должность:</b> ${attempt.position}</p>`;
+  html += `<p style="margin: 5px 0;"><b>Подразделение:</b> ${attempt.dept}</p>`;
+  html += `<p style="margin: 5px 0;"><b>Вид инструктажа:</b> ${attempt.modeName}</p>`;
+  html += `<p style="margin: 5px 0;"><b>Дата:</b> ${attempt.dateStr}</p>`;
+  html += `<p style="margin: 5px 0;"><b>Результат:</b> ${attempt.correct}/${attempt.total} (${attempt.percent}%)</p>`;
+  
+  html += `<div style="margin-top: 15px; background: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 10px;">`;
+  html += `<h4 style="margin-top: 0; font-size: 14px;">Ответы на вопросы:</h4>`;
+  
   if (Array.isArray(attempt.questionsDetail) && attempt.questionsDetail.length > 0) {
-    lines.push('ОТВЕТЫ НА ВОПРОСЫ:');
     attempt.questionsDetail.forEach((d, i) => {
-      lines.push(`${i + 1}. ${d.question}`);
-      lines.push(`   Ответ работника: ${d.userAnswer || '(нет ответа)'} ${d.isCorrect ? '✅' : '❌'}`);
+      const qColor = d.isCorrect ? '#2e7d32' : '#c62828';
+      const qIcon = d.isCorrect ? '✓' : '✗';
+      
+      html += `<div style="margin-bottom: 10px; font-size: 13px; border-bottom: 1px dashed #f0f0f0; padding-bottom: 8px;">`;
+      html += `<div style="font-weight: bold; margin-bottom: 4px;">${i + 1}. ${d.question}</div>`;
+      html += `<div style="color: ${qColor}; margin-left: 10px;">${qIcon} <b>Ответ:</b> ${d.userAnswer}</div>`;
+      
       if (!d.isCorrect) {
-        lines.push(`   Правильно: ${d.correctAnswer}`);
+        html += `<div style="color: #2e7d32; margin-left: 10px; margin-top: 4px;">✓ <b>Правильно:</b> ${d.correctAnswer}</div>`;
       }
-      lines.push('');
+      html += `</div>`;
     });
   } else {
-    lines.push('(детализация ответов недоступна для этой попытки)');
-    lines.push('');
+    html += `<p><em>(детализация ответов недоступна)</em></p>`;
   }
-
-  return lines.join('\n');
+  
+  html += `</div></div>`;
+  return html;
 }
 
 /* ====================== ОТПРАВКА ОТЧЁТА ====================== */
@@ -1252,7 +1190,6 @@ async function sendEmailReport(manual) {
     return false;
   }
 
-  // Отбираем попытки, которые ещё не отправлялись
   const lastEmailTs = parseInt(localStorage.getItem(LAST_EMAIL_KEY) || '0');
   const newAttempts = journal.filter(it => {
     const ts = new Date(it.date).getTime();
@@ -1267,31 +1204,28 @@ async function sendEmailReport(manual) {
     return false;
   }
 
-  // Статистика по новым попыткам
   const total = newAttempts.length;
   const passed = newAttempts.filter(x => x.passed).length;
   const failed = total - passed;
   const percent = Math.round(passed / total * 100);
   const now = new Date();
 
-  // Период
   const firstTs = newAttempts.reduce((min, it) => Math.min(min, new Date(it.date).getTime()), Infinity);
   const lastTs  = newAttempts.reduce((max, it) => Math.max(max, new Date(it.date).getTime()), 0);
   const periodStr = lastEmailTs > 0
     ? `${new Date(lastEmailTs).toLocaleString('ru-RU')} — ${new Date(lastTs).toLocaleString('ru-RU')}`
     : `с ${new Date(firstTs).toLocaleString('ru-RU')} по ${new Date(lastTs).toLocaleString('ru-RU')}`;
 
-  // Формируем детализацию
-  const details = newAttempts
+  // Формируем HTML
+  const detailsHTML = newAttempts
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .map((att, i) => formatAttemptDetails(att, i))
-    .join('\n\n');
+    .map((att, i) => formatAttemptDetailsHTML(att, i))
+    .join('');
 
-  // Ограничение EmailJS — около 50 000 символов
   const MAX_LEN = 45000;
-  let detailsTrimmed = details;
-  if (details.length > MAX_LEN) {
-    detailsTrimmed = details.slice(0, MAX_LEN) + '\n\n...(отчёт обрезан из-за размера)';
+  let detailsTrimmed = detailsHTML;
+  if (detailsHTML.length > MAX_LEN) {
+    detailsTrimmed = detailsHTML.slice(0, MAX_LEN) + '<br><br><i>...(отчёт обрезан из-за размера)</i>';
   }
 
   const params = {
@@ -1302,12 +1236,11 @@ async function sendEmailReport(manual) {
     passed: passed,
     failed: failed,
     percent: percent,
-    details: detailsTrimmed
+    details: detailsTrimmed // EmailJS будет ожидать HTML, так как в шаблоне стоят {{{details}}}
   };
 
   try {
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
-    // Обновляем метку ТОЛЬКО после успешной отправки
     localStorage.setItem(LAST_EMAIL_KEY, Date.now().toString());
     console.log(`✅ Письмо отправлено на ${ADMIN_EMAIL} (${total} новых попыток)`);
     if (manual) alert(`✅ Отчёт отправлен на ${ADMIN_EMAIL}\nНовых попыток в письме: ${total}`);
@@ -1327,7 +1260,6 @@ async function autoSyncAndMail() {
   const lastSync  = parseInt(localStorage.getItem(LAST_SYNC_KEY)  || '0');
   const lastEmail = parseInt(localStorage.getItem(LAST_EMAIL_KEY) || '0');
 
-  // Синхронизация раз в сутки
   if (now - lastSync > DAY_MS) {
     console.log('🔄 Авто-синхронизация...');
     const res = await loadJournalFromServer(true);
@@ -1337,7 +1269,6 @@ async function autoSyncAndMail() {
     }
   }
 
-  // Рассылка раз в сутки, ТОЛЬКО если есть новые попытки
   if (emailjsReady && now - lastEmail > DAY_MS) {
     console.log('📧 Проверка новых попыток для рассылки...');
     const journal = getJournal();
@@ -1347,7 +1278,6 @@ async function autoSyncAndMail() {
       await sendEmailReport(false);
     } else {
       console.log('📭 Новых попыток нет — письмо не отправляем');
-      // Обновляем метку, чтобы не проверять каждые 5 минут
       localStorage.setItem(LAST_EMAIL_KEY, now.toString());
     }
   }
@@ -1357,7 +1287,6 @@ async function autoSyncAndMail() {
 async function finishTest(timeout) {
   clearInterval(timerInterval);
 
-  // Считаем правильные + собираем детализацию
   let correctCount = 0;
   const questionsDetail = [];
 
@@ -1367,12 +1296,10 @@ async function finishTest(timeout) {
     const isCorrect = ua === ca;
     if (isCorrect) correctCount++;
 
-    // Текст ответа работника
     const userAnswerText = userAnswers[i].length === 0
       ? '(нет ответа)'
       : userAnswers[i].map(idx => q.shuffledAnswers[idx]?.text || '?').join('; ');
 
-    // Текст правильного ответа
     const correctAnswerText = q.correctShuffled
       .map(idx => q.shuffledAnswers[idx]?.text || '?')
       .join('; ');
@@ -1408,7 +1335,7 @@ async function finishTest(timeout) {
     passed,
     duration,
     operator: currentUser ? currentUser.login : '—',
-    questionsDetail  // 👈 Сохраняем детализацию
+    questionsDetail
   });
 
   document.getElementById('resultHeader').innerHTML = `
