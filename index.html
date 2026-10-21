@@ -110,7 +110,7 @@
   .storage-status.warn { background: #fff3e0; color: #ef6c00; }
   .storage-status.info { background: #e3f2fd; color: #0277bd; }
   
-  /* 👇 ИСПРАВЛЕНИЕ ДЛЯ ПЕЧАТИ */
+  /* 👇 ИСПРАВЛЕНИЕ ДЛЯ ПЕЧАТИ (чтобы не было огромных крестиков и рваных страниц) */
   @media print {
     body { background: #fff; padding: 0; }
     .container { box-shadow: none; max-width: 100%; }
@@ -1138,7 +1138,6 @@ async function loadJournalFromServer(silent) {
 function formatAttemptDetailsHTML(attempt, index) {
   let html = `<div style="margin-bottom: 25px; padding: 15px; background: #fcfcfc; border: 1px solid #eee; border-radius: 8px;">`;
   
-  // Заголовок попытки
   const statusColor = attempt.passed ? '#2e7d32' : '#c62828';
   const statusText = attempt.passed ? 'ЗАЧЁТ' : 'НЕЗАЧЁТ';
   const statusIcon = attempt.passed ? '✅' : '❌';
@@ -1216,7 +1215,6 @@ async function sendEmailReport(manual) {
     ? `${new Date(lastEmailTs).toLocaleString('ru-RU')} — ${new Date(lastTs).toLocaleString('ru-RU')}`
     : `с ${new Date(firstTs).toLocaleString('ru-RU')} по ${new Date(lastTs).toLocaleString('ru-RU')}`;
 
-  // Формируем HTML
   const detailsHTML = newAttempts
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .map((att, i) => formatAttemptDetailsHTML(att, i))
@@ -1236,7 +1234,7 @@ async function sendEmailReport(manual) {
     passed: passed,
     failed: failed,
     percent: percent,
-    details: detailsTrimmed // EmailJS будет ожидать HTML, так как в шаблоне стоят {{{details}}}
+    details: detailsTrimmed 
   };
 
   try {
