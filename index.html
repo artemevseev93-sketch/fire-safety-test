@@ -110,7 +110,6 @@
   .storage-status.warn { background: #fff3e0; color: #ef6c00; }
   .storage-status.info { background: #e3f2fd; color: #0277bd; }
   
-  /* 👇 ИСПРАВЛЕНИЕ ДЛЯ ПЕЧАТИ (чтобы не было огромных крестиков и рваных страниц) */
   @media print {
     body { background: #fff; padding: 0; }
     .container { box-shadow: none; max-width: 100%; }
@@ -1190,17 +1189,21 @@ async function sendEmailReport(manual) {
   }
 
   const lastEmailTs = parseInt(localStorage.getItem(LAST_EMAIL_KEY) || '0');
-  const newAttempts = journal.filter(it => {
+  
+  // Берем только новые попытки
+  let newAttempts = journal.filter(it => {
     const ts = new Date(it.date).getTime();
     return ts > lastEmailTs;
   });
 
   if (newAttempts.length === 0) {
-    if (manual) {
-      alert('Нет новых попыток с момента последней рассылки.\nПисьмо не отправлено.');
-    }
-    console.log('📭 Нет новых попыток — письмо не отправлено');
+    if (manual) alert('Нет новых попыток с момента последней рассылки.');
     return false;
+  }
+
+  // 👇 ОГРАНИЧЕНИЕ: Берем максимум 5 последних попыток, чтобы не превысить лимит EmailJS
+  if (newAttempts.length > 5) {
+    newAttempts = newAttempts.slice(-5);
   }
 
   const total = newAttempts.length;
@@ -1211,6 +1214,7 @@ async function sendEmailReport(manual) {
 
   const firstTs = newAttempts.reduce((min, it) => Math.min(min, new Date(it.date).getTime()), Infinity);
   const lastTs  = newAttempts.reduce((max, it) => Math.max(max, new Date(it.date).getTime()), 0);
+  
   const periodStr = lastEmailTs > 0
     ? `${new Date(lastEmailTs).toLocaleString('ru-RU')} — ${new Date(lastTs).toLocaleString('ru-RU')}`
     : `с ${new Date(firstTs).toLocaleString('ru-RU')} по ${new Date(lastTs).toLocaleString('ru-RU')}`;
@@ -1220,12 +1224,6 @@ async function sendEmailReport(manual) {
     .map((att, i) => formatAttemptDetailsHTML(att, i))
     .join('');
 
-  const MAX_LEN = 45000;
-  let detailsTrimmed = detailsHTML;
-  if (detailsHTML.length > MAX_LEN) {
-    detailsTrimmed = detailsHTML.slice(0, MAX_LEN) + '<br><br><i>...(отчёт обрезан из-за размера)</i>';
-  }
-
   const params = {
     to_email: ADMIN_EMAIL,
     date: now.toLocaleString('ru-RU'),
@@ -1234,14 +1232,14 @@ async function sendEmailReport(manual) {
     passed: passed,
     failed: failed,
     percent: percent,
-    details: detailsTrimmed 
+    details: detailsHTML
   };
 
   try {
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
     localStorage.setItem(LAST_EMAIL_KEY, Date.now().toString());
-    console.log(`✅ Письмо отправлено на ${ADMIN_EMAIL} (${total} новых попыток)`);
-    if (manual) alert(`✅ Отчёт отправлен на ${ADMIN_EMAIL}\nНовых попыток в письме: ${total}`);
+    console.log(`✅ Письмо отправлено на ${ADMIN_EMAIL}`);
+    if (manual) alert(`✅ Отчёт отправлен на ${ADMIN_EMAIL}\nВ письмо включены последние ${total} попыток.`);
     return true;
   } catch(e) {
     console.error('❌ Ошибка отправки письма:', e);
@@ -1268,7 +1266,6 @@ async function autoSyncAndMail() {
   }
 
   if (emailjsReady && now - lastEmail > DAY_MS) {
-    console.log('📧 Проверка новых попыток для рассылки...');
     const journal = getJournal();
     const hasNew = journal.some(it => new Date(it.date).getTime() > lastEmail);
     if (hasNew) {
